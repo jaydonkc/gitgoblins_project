@@ -15,21 +15,14 @@ Validate demand for a faster, engaging way to discover shelter pets before build
 ## Tech Stack (MVP)
 
 ### Frontend
-- **Framework:** Next.js (React)
-- **Styling:** Tailwind CSS
-- **UI Components:** shadcn/ui
-- **Animations:** Framer Motion (for swipe + card transitions)
+- **Framework:** Next.js/Node.js (React)
 
 ### Backend
-- **Backend-as-a-Service:** Supabase (recommended)  
-  _Alternative:_ Firebase
+- Express.js
 
 ### Database
-- **PostgreSQL** (via Supabase)
+- MongoDB
 
-### Auth (optional for MVP)
-- Supabase Auth (email magic links)
-- Allow guest browsing, require email for inquiries
 
 ### Storage
 - Supabase Storage (pet images)
@@ -42,14 +35,6 @@ Validate demand for a faster, engaging way to discover shelter pets before build
 
 ### Hosting / Deployment
 - **Frontend:** Vercel
-- **Backend:** Supabase cloud
-- **Domain:** Namecheap / Google Domains
-
-### Analytics
-- PostHog or Google Analytics
-
-### Email / Notifications
-- Resend / SendGrid (for inquiry emails)
 
 ---
 

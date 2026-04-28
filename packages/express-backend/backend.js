@@ -18,9 +18,9 @@ app.get("/", (req, res) => {
 
 app.get("/users", (req, res) => {
   const name = req.query.name;
-  const job = req.query.job;
+  const email = req.query.email;
 
-  getUsers(name, job)
+  getUsers(name, email)
     .then((users) => {
       res.send(users);
     })
@@ -34,7 +34,7 @@ app.post("/users", (req, res) => {
 
   if (
     userToAdd != undefined &&
-    userToAdd.job != "" &&
+    userToAdd.email != "" &&
     userToAdd.name != ""
   ) {
     const newUser = userToAdd;

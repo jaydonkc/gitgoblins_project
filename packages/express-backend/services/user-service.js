@@ -32,7 +32,7 @@ function getMongoURI(dbname) {
 
 // Mongoose 6+ does not need useNewUrlParser or useUnifiedTopology
 mongoose
-  .connect(getMongoURI("users"))
+  .connect(getMongoURI("primaryDB"))
   .then(() => console.log("Successfully connected to MongoDB"))
   .catch((error) => console.log("Connection Error:", error));
 
@@ -41,15 +41,15 @@ function addUser(user) {
   return userToAdd.save();
 }
 
-function getUsers(name, job) {
-  if (name === undefined && job === undefined) {
+function getUsers(name, email) {
+  if (name === undefined && email === undefined) {
     return userModel.find();
-  } else if (name && !job) {
+  } else if (name && !email) {
     return findUserByName(name);
-  } else if (job && !name) {
-    return findUserByJob(job);
+  } else if (email && !name) {
+    return findUserByEmail(email);
   } else {
-    return userModel.find({ name: name, job: job });
+    return userModel.find({ name: name, email: email });
   }
 }
 
@@ -61,8 +61,8 @@ function findUserByName(name) {
   return userModel.find({ name: name });
 }
 
-function findUserByJob(job) {
-  return userModel.find({ job: job });
+function findUserByEmail(email) {
+  return userModel.find({ email: email });
 }
 
 function removeUser(id) {
@@ -74,6 +74,6 @@ export default {
   getUsers,
   findUserById,
   findUserByName,
-  findUserByJob,
+  findUserByEmail,
   removeUser
 };

@@ -6,7 +6,7 @@ function TableHeader() {
     <thead>
       <tr>
         <th>Name</th>
-        <th>Job</th>
+        <th>Email</th>
         <th>Id</th>
         <th>Remove</th>
       </tr>
@@ -19,7 +19,7 @@ function TableBody(props) {
     return (
       <tr key={index}>
         <td>{row.name}</td>
-        <td>{row.job}</td>
+        <td>{row.email}</td>
         <td>{row._id}</td>
         <td>
           <button

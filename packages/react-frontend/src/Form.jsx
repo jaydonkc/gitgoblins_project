@@ -4,19 +4,19 @@ import React, { useState } from "react";
 function Form(props) {
   const [person, setPerson] = useState({
     name: "",
-    job: ""
+    email: ""
   });
 
   function handleChange(event) {
     const { name, value } = event.target;
-    if (name === "job")
-      setPerson({ name: person["name"], job: value });
-    else setPerson({ name: value, job: person["job"] });
+    if (name === "email")
+      setPerson({ name: person["name"], email: value });
+    else setPerson({ name: value, email: person["email"] });
   }
 
   function submitForm() {
     props.handleSubmit(person);
-    setPerson({ name: "", job: "" });
+    setPerson({ name: "", email: "" });
   }
 
   return (
@@ -29,12 +29,12 @@ function Form(props) {
         value={person.name}
         onChange={handleChange}
       />
-      <label htmlFor="job">Job</label>
+      <label htmlFor="email">Email</label>
       <input
         type="text"
-        name="job"
-        id="job"
-        value={person.job}
+        name="email"
+        id="email"
+        value={person.email}
         onChange={handleChange}
       />
       <input

@@ -7,20 +7,21 @@ const UserSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
-    job: {
+    email: {
       type: String,
       required: true,
       trim: true,
       validate(value) {
+        //In the future, will want better email validation
         if (value.length < 2)
           throw new Error(
-            "Invalid job, must be at least 2 characters."
+            "Invalid email, must be at least 2 characters."
           );
       }
     }
   },
   {
-    collection: "users_list",
+    collection: "users",
     // These two lines are CRITICAL: they tell Mongoose to include
     // virtuals (like our new 'id') whenever data is sent to the Frontend
     toJSON: { virtuals: true },

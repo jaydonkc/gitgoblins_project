@@ -1,6 +1,7 @@
 // backend.js
 import express from "express";
 import cors from "cors";
+import "./config/database.js";
 import userService from "./services/user-service.js";
 
 const { addUser, getUsers, findUserById, removeUser } =

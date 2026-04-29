@@ -1,3 +1,4 @@
+//This file declares how the user data is set up in MongoDB
 import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema(

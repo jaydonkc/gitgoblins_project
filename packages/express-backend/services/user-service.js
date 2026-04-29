@@ -1,3 +1,4 @@
+//user-service.js
 import userModel from "../models/user.js";
 
 function addUser(user) {

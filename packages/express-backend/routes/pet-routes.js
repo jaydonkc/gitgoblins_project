@@ -1,18 +1,16 @@
-//user-routes.js
-//This file is for the HTML routes for users
+//pet-routes.js
+//This file is for the HTML routes for pets
 import express from "express";
 const router = express.Router();
-import userService from "../services/user-service.js";
+import petService from "../services/pet-service.js";
 
-const { addUser, getUsers, findUserById, removeUser } = userService;
+const { addPet, getPets, findPetById, removePet } = petService;
 
 router.get("/", (req, res) => {
-  const name = req.query.name;
-  const email = req.query.email;
 
-  getUsers(name, email)
-    .then((users) => {
-      res.send(users);
+  getPets()
+    .then((pets) => {
+      res.send(pets);
     })
     .catch((error) => {
       res.status(404).send(error);
@@ -20,17 +18,20 @@ router.get("/", (req, res) => {
 });
 
 router.post("/", (req, res) => {
-  const userToAdd = req.body;
+  const petToAdd = req.body;
 
   if (
-    userToAdd != undefined &&
-    userToAdd.email != "" &&
-    userToAdd.name != ""
+    petToAdd &&
+    petToAdd.name != "" &&
+    petToAdd.age != "" &&
+    petToAdd.type != "" &&
+    petToAdd.linked_org != null
+    
   ) {
-    const newUser = userToAdd;
-    addUser(newUser)
-      .then((createdUser) => {
-        res.status(201).send(createdUser);
+    const newPet = petToAdd;
+    addPet(newPet)
+      .then((createdPet) => {
+        res.status(201).send(createdPet);
       })
       .catch((error) => {
         console.log(error);
@@ -44,7 +45,7 @@ router.post("/", (req, res) => {
 router.delete("/:id", (req, res) => {
   const id = req.params["id"];
 
-  removeUser(id)
+  removePet(id)
     .then(() => {
       res.status(204).send();
     })
@@ -57,12 +58,12 @@ router.delete("/:id", (req, res) => {
 router.get("/:id", (req, res) => {
   const id = req.params["id"]; //or req.params.id
 
-  findUserById(id)
-    .then((user) => {
-      if (!user) {
+  findPetById(id)
+    .then((pet) => {
+      if (!pet) {
         res.status(404).send("Resource not found.");
       } else {
-        res.send(user);
+        res.send(pet);
       }
     })
     .catch((error) => {

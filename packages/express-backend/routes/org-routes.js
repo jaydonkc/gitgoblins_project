@@ -19,7 +19,6 @@ router.get("/", (req, res) => {
 
 router.post("/", (req, res) => {
   const orgToAdd = req.body;
-  console.log("BODY:", req.body);
 
   if (
     orgToAdd != undefined &&

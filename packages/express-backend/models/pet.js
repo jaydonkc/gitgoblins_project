@@ -1,28 +1,30 @@
-//This file declares how the user data is set up in MongoDB
 import mongoose from "mongoose";
 
-const UserSchema = new mongoose.Schema(
+const PetSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: true,
       trim: true
     },
-    email: {
+    type: {
       type: String,
       required: true,
-      trim: true,
-      validate(value) {
-        //In the future, will want better email validation
-        if (value.length < 2)
-          throw new Error(
-            "Invalid email, must be at least 2 characters."
-          );
-      }
+      trim: true
+    },
+    age: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    linked_org: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
     }
   },
   {
-    collection: "users",
+    collection: "pets",
     // These two lines are CRITICAL: they tell Mongoose to include
     // virtuals (like our new 'id') whenever data is sent to the Frontend
     toJSON: { virtuals: true },
@@ -31,10 +33,10 @@ const UserSchema = new mongoose.Schema(
 );
 
 // This creates a virtual "id" property that mirrors the MongoDB "_id"
-UserSchema.virtual("id").get(function () {
+PetSchema.virtual("id").get(function () {
   return this._id.toHexString();
 });
 
-const User = mongoose.model("User", UserSchema);
+const Pet = mongoose.model("Pet", PetSchema);
 
-export default User;
+export default Pet;

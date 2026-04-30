@@ -1,7 +1,6 @@
-//This file declares how the user data is set up in MongoDB
 import mongoose from "mongoose";
 
-const UserSchema = new mongoose.Schema(
+const OrganizationSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -19,10 +18,10 @@ const UserSchema = new mongoose.Schema(
             "Invalid email, must be at least 2 characters."
           );
       }
-    }
+    },
   },
   {
-    collection: "users",
+    collection: "orgs",
     // These two lines are CRITICAL: they tell Mongoose to include
     // virtuals (like our new 'id') whenever data is sent to the Frontend
     toJSON: { virtuals: true },
@@ -31,10 +30,10 @@ const UserSchema = new mongoose.Schema(
 );
 
 // This creates a virtual "id" property that mirrors the MongoDB "_id"
-UserSchema.virtual("id").get(function () {
+OrganizationSchema.virtual("id").get(function () {
   return this._id.toHexString();
 });
 
-const User = mongoose.model("User", UserSchema);
+const Organization = mongoose.model("Organization", OrganizationSchema);
 
-export default User;
+export default Organization;

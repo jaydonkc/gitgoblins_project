@@ -1,11 +1,17 @@
 // src/MyApp.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Table from "./Table";
 import Form from "./Form";
 
 function MyApp() {
   const [characters, setCharacters] = useState([]);
 
+
+  function fetchUsers() {
+    const promise = fetch("http://localhost:8000/users");
+    return promise;
+  }
+  
   useEffect(() => {
     fetchUsers()
       .then((res) => res.json())
@@ -44,10 +50,7 @@ function MyApp() {
       });
   }
 
-  function fetchUsers() {
-    const promise = fetch("http://localhost:8000/users");
-    return promise;
-  }
+  
 
   function postUser(person) {
     const promise = fetch("http://localhost:8000/users", {

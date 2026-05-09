@@ -12,10 +12,28 @@ const PetSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
+    breed: {
+      type: String,
+      required: true,
+      trim: true
+    },
     age: {
       type: String,
       required: true,
       trim: true
+    },
+    size: {
+      type: String,
+      enum: ["small", "medium", "large"],
+      required: true
+    },
+    description: {
+      type: String,
+      trim: true
+    },
+    image: {
+      type: String,
+      required: true
     },
     linked_org: {
       type: mongoose.Schema.Types.ObjectId,

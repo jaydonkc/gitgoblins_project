@@ -7,11 +7,13 @@ import "../config/database.js";
 
 const seedPets = async () => {
   try {
-    // Read seed data
+    // Correct path to pets.json (Windows-safe)
     const seedDataPath = path.join(
-      path.dirname(new URL(import.meta.url).pathname),
-      "../seeds/pets.json"
+      process.cwd(), // current working directory, should be express-backend
+      "seeds",
+      "pets.json"
     );
+
     const petsData = JSON.parse(fs.readFileSync(seedDataPath, "utf-8"));
 
     // Find or create a default organization
@@ -21,19 +23,19 @@ const seedPets = async () => {
         name: "Default Shelter",
         address: "123 Main St",
         phone: "555-0000",
-        email: "shelter@example.com"
+        email: "shelter@example.com",
       });
       console.log("Created default organization:", org.name);
     }
 
-    // Clear existing seed pets (optional - comment out if you want to keep existing data)
+    // Clear existing seed pets (optional)
     // await Pet.deleteMany({});
 
     // Create pets
     const petsWithOrg = petsData.map((pet) => ({
       ...pet,
       linked_org: org._id,
-      availability: "available"
+      availability: "available",
     }));
 
     const createdPets = await Pet.insertMany(petsWithOrg, { ordered: false });

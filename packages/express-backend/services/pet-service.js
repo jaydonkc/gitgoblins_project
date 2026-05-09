@@ -18,9 +18,23 @@ function findPetById(id) {
   return petModel.findById(id);
 }
 
+function updatePetAvailability(id, availability) {
+  return petModel.findByIdAndUpdate(
+    id,
+    { availability },
+    { new: true }
+  );
+}
+
+function getAvailablePets() {
+  return petModel.find({ availability: { $ne: "adopted" } });
+}
+
 export default {
   addPet,
   getPets,
   removePet,
-  findPetById
+  findPetById,
+  updatePetAvailability,
+  getAvailablePets
 };

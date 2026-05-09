@@ -4,7 +4,7 @@ import express from "express";
 const router = express.Router();
 import petService from "../services/pet-service.js";
 
-const { addPet, getPets, findPetById, removePet } = petService;
+const { addPet, getPets, findPetById, removePet, updatePetAvailability, getAvailablePets } = petService;
 
 router.get("/", (req, res) => {
 
@@ -68,6 +68,39 @@ router.get("/:id", (req, res) => {
     })
     .catch((error) => {
       res.status(404).send(error);
+    });
+});
+
+router.get("/discover/available", (req, res) => {
+  getAvailablePets()
+    .then((pets) => {
+      res.send(pets);
+    })
+    .catch((error) => {
+      res.status(404).send(error);
+    });
+});
+
+router.patch("/:id/availability", (req, res) => {
+  const id = req.params["id"];
+  const { availability } = req.body;
+
+  if (!availability || !["available", "pending", "adopted"].includes(availability)) {
+    res.status(400).send("Invalid availability status");
+    return;
+  }
+
+  updatePetAvailability(id, availability)
+    .then((pet) => {
+      if (!pet) {
+        res.status(404).send("Pet not found.");
+      } else {
+        res.send(pet);
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+      res.status(500).send("Failed to update pet availability");
     });
 });
 

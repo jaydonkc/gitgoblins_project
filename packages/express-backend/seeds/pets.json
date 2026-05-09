@@ -1,0 +1,92 @@
+[
+  {
+    "name": "Max",
+    "type": "dog",
+    "breed": "Golden Retriever",
+    "age": "2 years",
+    "size": "large",
+    "description": "Friendly and energetic Golden Retriever who loves to play fetch and swim. Great with families and other pets.",
+    "image": "https://picsum.photos/400/300?random=1"
+  },
+  {
+    "name": "Luna",
+    "type": "cat",
+    "breed": "Siamese",
+    "age": "1 year",
+    "size": "small",
+    "description": "Playful and affectionate Siamese kitten with striking blue eyes. Loves interactive toys and cuddles.",
+    "image": "https://picsum.photos/400/300?random=2"
+  },
+  {
+    "name": "Charlie",
+    "type": "dog",
+    "breed": "Labrador Retriever",
+    "age": "3 years",
+    "size": "large",
+    "description": "Gentle and loyal Lab mix. Excellent with children and enjoys outdoor adventures. Fully trained and house-broken.",
+    "image": "https://picsum.photos/400/300?random=3"
+  },
+  {
+    "name": "Whiskers",
+    "type": "cat",
+    "breed": "Maine Coon",
+    "age": "2 years",
+    "size": "large",
+    "description": "Majestic Maine Coon with a fluffy coat. Intelligent and social, enjoys being around people.",
+    "image": "https://picsum.photos/400/300?random=4"
+  },
+  {
+    "name": "Buddy",
+    "type": "dog",
+    "breed": "Beagle",
+    "age": "4 years",
+    "size": "small",
+    "description": "Sweet and curious Beagle with endless energy. Perfect companion for active families.",
+    "image": "https://picsum.photos/400/300?random=5"
+  },
+  {
+    "name": "Mittens",
+    "type": "cat",
+    "breed": "Tabby",
+    "age": "6 months",
+    "size": "small",
+    "description": "Adorable orange tabby kitten. Playful, curious, and still learning the ropes. Needs a patient family.",
+    "image": "https://picsum.photos/400/300?random=6"
+  },
+  {
+    "name": "Rocky",
+    "type": "dog",
+    "breed": "German Shepherd",
+    "age": "5 years",
+    "size": "large",
+    "description": "Well-trained German Shepherd seeking an experienced owner. Loyal, protective, and loves working activities.",
+    "image": "https://picsum.photos/400/300?random=7"
+  },
+  {
+    "name": "Princess",
+    "type": "cat",
+    "breed": "Persian",
+    "age": "3 years",
+    "size": "medium",
+    "description": "Elegant Persian cat who enjoys a calm environment. Prefers quiet homes with gentle handling.",
+    "image": "https://picsum.photos/400/300?random=8"
+  },
+  {
+    "name": "Oscar",
+    "type": "dog",
+    "breed": "Poodle Mix",
+    "age": "2 years",
+    "size": "medium",
+    "description": "Intelligent and hypoallergenic Poodle mix. Great for active singles or couples. Requires regular grooming.",
+    "image": "https://picsum.photos/400/300?random=9"
+  },
+  {
+    "name": "Bella",
+    "type": "cat",
+    "breed": "Ragdoll",
+    "age": "1 year",
+    "size": "medium",
+    "description": "Beautiful blue-eyed Ragdoll kitten. Gentle, affectionate, and loves being held. Perfect family cat.",
+    "image": "https://picsum.photos/400/300?random=10"
+  }
+]

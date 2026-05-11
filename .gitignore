@@ -1,2 +1,6 @@
 /node_modules
 *.env
+dist/
+cypress/downloads/
+cypress/screenshots/
+cypress/videos/

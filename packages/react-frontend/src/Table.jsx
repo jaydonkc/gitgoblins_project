@@ -1,6 +1,4 @@
 // src/Table.jsx
-import React from "react";
-
 function TableHeader() {
   return (
     <thead>

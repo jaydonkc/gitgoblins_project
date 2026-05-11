@@ -7,15 +7,20 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "vite packages/react-frontend",
+    "test": "npm run test:e2e",
+    "start": "npm --workspace packages/react-frontend run dev -- --host 127.0.0.1 --port 3100 --strictPort",
+    "build": "npm --workspace packages/react-frontend run build",
+    "cypress:run": "cypress run --e2e",
+    "test:e2e": "start-server-and-test start http://127.0.0.1:3100 cypress:run",
     "format": "prettier --write './**/*.{js,jsx,ts,tsx,css,md,json}' --config ./.prettierrc"
   },
   "workspaces": [
     "packages/*"
   ],
   "devDependencies": {
+    "cypress": "^13.17.0",
     "nodemon": "^3.1.14",
-    "prettier": "^3.8.3"
+    "prettier": "^3.8.3",
+    "start-server-and-test": "^2.0.9"
   }
 }

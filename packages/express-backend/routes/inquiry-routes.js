@@ -22,12 +22,19 @@ router.post("/", (req, res) => {
 
   if (
     inquiryToAdd &&
-    inquiryToAdd.user != null &&
-    inquiryToAdd.pet != null &&
-    inquiryToAdd.date != null
+    (inquiryToAdd.pet != null || inquiryToAdd.petId != null) &&
+    (inquiryToAdd.user != null ||
+      (inquiryToAdd.name != null &&
+        inquiryToAdd.email != null &&
+        inquiryToAdd.phone != null &&
+        inquiryToAdd.housing != null &&
+        inquiryToAdd.message != null))
     
   ) {
-    const newInquiry = inquiryToAdd;
+    const newInquiry = {
+      ...inquiryToAdd,
+      date: inquiryToAdd.date || new Date()
+    };
     addInquiry(newInquiry)
       .then((createdInquiry) => {
         res.status(201).send(createdInquiry);

@@ -1,0 +1,6 @@
+{
+  "buildCommand": "npm --workspace packages/react-frontend run build",
+  "outputDirectory": "packages/react-frontend/dist",
+  "installCommand": "npm install",
+  "framework": "vite"
+}

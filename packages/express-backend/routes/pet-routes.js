@@ -4,7 +4,15 @@ import express from "express";
 const router = express.Router();
 import petService from "../services/pet-service.js";
 
-const { addPet, getPets, findPetById, removePet, updatePetAvailability, getAvailablePets } = petService;
+const {
+  addPet,
+  getPets,
+  findPetById,
+  removePet,
+  updatePetAvailability,
+  updatePetPhotos,
+  getAvailablePets
+} = petService;
 
 router.get("/", (req, res) => {
 
@@ -24,11 +32,16 @@ router.post("/", (req, res) => {
     petToAdd &&
     petToAdd.name != "" &&
     petToAdd.age != "" &&
-    petToAdd.type != "" &&
-    petToAdd.linked_org != null
+    (petToAdd.type != "" || petToAdd.species != "") &&
+    (petToAdd.linked_org != null || petToAdd.shelterEmail != null)
     
   ) {
-    const newPet = petToAdd;
+    const newPet = {
+      ...petToAdd,
+      type: petToAdd.type || petToAdd.species,
+      species: petToAdd.species || petToAdd.type,
+      imageUrls: Array.isArray(petToAdd.imageUrls) ? petToAdd.imageUrls.filter(Boolean) : []
+    };
     addPet(newPet)
       .then((createdPet) => {
         res.status(201).send(createdPet);
@@ -40,6 +53,26 @@ router.post("/", (req, res) => {
   } else {
     res.status(404).send();
   }
+});
+
+router.patch("/:id/photos", (req, res) => {
+  const id = req.params["id"];
+  const imageUrls = Array.isArray(req.body.imageUrls)
+    ? req.body.imageUrls.map((url) => String(url).trim()).filter(Boolean)
+    : [];
+
+  updatePetPhotos(id, imageUrls)
+    .then((pet) => {
+      if (!pet) {
+        res.status(404).send("Pet not found.");
+      } else {
+        res.send(pet);
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+      res.status(500).send("Failed to update pet photos");
+    });
 });
 
 router.delete("/:id", (req, res) => {

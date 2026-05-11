@@ -5,16 +5,47 @@ const InquirySchema = new mongoose.Schema(
     user: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "User",
-          required: true,
         },
     pet: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Pet",
-        required: true,
       },
+    petId: {
+      type: String,
+      trim: true,
+    },
+    petName: {
+      type: String,
+      trim: true,
+    },
+    name: {
+      type: String,
+      trim: true,
+    },
+    email: {
+      type: String,
+      trim: true,
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    housing: {
+      type: String,
+      trim: true,
+    },
+    message: {
+      type: String,
+      trim: true,
+    },
     date: {
       type: Date,
-      required: true,
+      default: Date.now,
+    },
+    status: {
+      type: String,
+      enum: ["new", "contacted", "approved", "rejected"],
+      default: "new"
     },
   },
   {

@@ -1,0 +1,9 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "env": {
+    "PET_ADOPTION_DATA_DIR": "/tmp/gitgoblins-pet-adoption"
+  }
+}

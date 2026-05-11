@@ -109,6 +109,26 @@ export default function ShelterPage() {
     setStatus(`${data.pet.name} was created and is now visible in the discovery feed.`);
   }
 
+  async function updateStatus(petId: string, petStatus: Pet["status"]) {
+    setStatus("");
+    setError("");
+
+    const response = await fetch(`/api/pets/${petId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: petStatus }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      setError(data.error ?? "Unable to update pet status");
+      return;
+    }
+
+    setPets((current) => current.map((pet) => (pet.id === petId ? data.pet : pet)));
+    setStatus(`${data.pet.name} is now marked ${data.pet.status}.`);
+  }
+
   return (
     <AppChrome>
       <section className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_0.8fr]">
@@ -306,6 +326,19 @@ export default function ShelterPage() {
                   {pet.breed} • {pet.imageUrls.length} photo
                   {pet.imageUrls.length === 1 ? "" : "s"}
                 </p>
+                <label className="mt-3 grid gap-1 text-xs font-semibold text-ink/70">
+                  Availability
+                  <select
+                    value={pet.status}
+                    onChange={(event) => updateStatus(pet.id, event.target.value as Pet["status"])}
+                    className="focus-ring rounded-md border border-ink/15 bg-white px-2 py-1.5 text-sm font-medium text-ink"
+                    data-cy="pet-status"
+                  >
+                    <option value="available">Available</option>
+                    <option value="pending">Pending</option>
+                    <option value="adopted">Adopted</option>
+                  </select>
+                </label>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Link
                     href={`/pets/${pet.id}`}

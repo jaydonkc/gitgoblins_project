@@ -1,2 +1,21 @@
-/node_modules
-*.env
+node_modules/
+.next/
+out/
+
+.env
+.env*.local
+
+.data/
+coverage/
+tsconfig.tsbuildinfo
+
+cypress/downloads/
+cypress/screenshots/
+cypress/videos/
+
+# Generated slide decks / presentation artifacts
+*.pptx
+outputs/
+slides/
+
+.DS_Store

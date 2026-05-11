@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Heart, MapPin, PawPrint } from "lucide-react";
+import { ArrowRight, Heart, MapPin, PawPrint, RotateCcw } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
 import type { Pet } from "@/lib/types";
 
@@ -10,6 +10,7 @@ export default function HomePage() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     fetch("/api/pets")
@@ -21,6 +22,12 @@ export default function HomePage() {
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const currentPet = pets[currentIndex] ?? pets[0];
+
+  function showNextPet() {
+    setCurrentIndex((index) => (pets.length ? (index + 1) % pets.length : 0));
+  }
 
   return (
     <AppChrome>
@@ -63,12 +70,12 @@ export default function HomePage() {
         </div>
 
         <div className="overflow-hidden rounded-lg bg-white shadow-panel">
-          {pets[0] ? (
+          {currentPet ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={pets[0].imageUrls[0] ?? "/placeholder.svg"}
-                alt={`${pets[0].name}, ${pets[0].breed}`}
+                src={currentPet.imageUrls[0] ?? "/placeholder.svg"}
+                alt={`${currentPet.name}, ${currentPet.breed}`}
                 className="h-80 w-full object-cover"
                 onError={(event) => {
                   event.currentTarget.src = "/placeholder.svg";
@@ -76,10 +83,28 @@ export default function HomePage() {
               />
               <div className="grid gap-2 p-5">
                 <p className="text-sm font-medium text-moss">Featured match</p>
-                <h2 className="text-2xl font-bold text-ink">{pets[0].name}</h2>
+                <h2 className="text-2xl font-bold text-ink">{currentPet.name}</h2>
                 <p className="text-sm text-ink/65">
-                  {pets[0].breed} • {pets[0].age} • {pets[0].location}
+                  {currentPet.breed} • {currentPet.age} • {currentPet.location}
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    href={`/pets/${currentPet.id}`}
+                    className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-ink px-3 py-2 text-sm font-semibold text-white hover:bg-ink/90"
+                  >
+                    View profile
+                    <Heart size={15} aria-hidden="true" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={showNextPet}
+                    className="focus-ring inline-flex items-center justify-center gap-2 rounded-md border border-ink/15 bg-white px-3 py-2 text-sm font-semibold text-ink hover:bg-paper"
+                    data-cy="next-pet"
+                  >
+                    Next pet
+                    <RotateCcw size={15} aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             </>
           ) : (

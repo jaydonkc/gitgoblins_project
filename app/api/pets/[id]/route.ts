@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getPet, updatePetPhotos } from "@/lib/store";
+import { getPet, updatePetPhotos, updatePetStatus } from "@/lib/store";
+import type { PetStatus } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const body = await request.json();
-    const pet = await updatePetPhotos(id, body.imageUrls);
+    const pet =
+      body.status !== undefined
+        ? await updatePetStatus(id, body.status as PetStatus)
+        : await updatePetPhotos(id, body.imageUrls);
     return NextResponse.json({ pet });
   } catch (error) {
     return NextResponse.json(

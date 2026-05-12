@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import type { Inquiry, Pet } from "./types";
+import type { Inquiry, Pet, PetStatus } from "./types";
 
 type Db = {
   pets: Pet[];
@@ -162,6 +162,20 @@ export async function updatePetPhotos(id: string, imageUrls: unknown) {
 
   const cleanedImages = cleanImages(imageUrls);
   pet.imageUrls = cleanedImages.length ? cleanedImages : ["/placeholder.svg"];
+  await writeDb(db);
+  return pet;
+}
+
+export async function updatePetStatus(id: string, status: PetStatus) {
+  if (!["available", "pending", "adopted"].includes(status)) {
+    throw new Error("Invalid pet status");
+  }
+
+  const db = await readDb();
+  const pet = db.pets.find((item) => item.id === id);
+  if (!pet) throw new Error("Pet not found");
+
+  pet.status = status;
   await writeDb(db);
   return pet;
 }

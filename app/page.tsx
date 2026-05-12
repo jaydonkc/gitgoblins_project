@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Heart, MapPin, PawPrint, RotateCcw } from "lucide-react";
 import { AppChrome } from "@/components/AppChrome";
@@ -11,6 +11,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [speciesPreference, setSpeciesPreference] = useState("Any");
+  const [sizePreference, setSizePreference] = useState("Any");
 
   useEffect(() => {
     fetch("/api/pets")
@@ -23,10 +25,24 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const currentPet = pets[currentIndex] ?? pets[0];
+  const filteredPets = useMemo(
+    () =>
+      pets.filter((pet) => {
+        const speciesMatches = speciesPreference === "Any" || pet.species === speciesPreference;
+        const sizeMatches = sizePreference === "Any" || pet.size === sizePreference;
+        return speciesMatches && sizeMatches;
+      }),
+    [pets, sizePreference, speciesPreference],
+  );
+
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [speciesPreference, sizePreference]);
+
+  const currentPet = filteredPets[currentIndex] ?? filteredPets[0];
 
   function showNextPet() {
-    setCurrentIndex((index) => (pets.length ? (index + 1) % pets.length : 0));
+    setCurrentIndex((index) => (filteredPets.length ? (index + 1) % filteredPets.length : 0));
   }
 
   return (
@@ -66,6 +82,35 @@ export default function HomePage() {
             >
               Add a pet
             </Link>
+          </div>
+          <div className="grid gap-3 rounded-lg border border-ink/10 bg-white p-4 shadow-sm sm:grid-cols-2">
+            <label className="grid gap-1.5 text-sm font-medium text-ink">
+              Pet type
+              <select
+                value={speciesPreference}
+                onChange={(event) => setSpeciesPreference(event.target.value)}
+                className="focus-ring rounded-md border border-ink/15 bg-white px-3 py-2 text-sm"
+                data-cy="species-preference"
+              >
+                <option>Any</option>
+                <option>Dog</option>
+                <option>Cat</option>
+              </select>
+            </label>
+            <label className="grid gap-1.5 text-sm font-medium text-ink">
+              Size
+              <select
+                value={sizePreference}
+                onChange={(event) => setSizePreference(event.target.value)}
+                className="focus-ring rounded-md border border-ink/15 bg-white px-3 py-2 text-sm"
+                data-cy="size-preference"
+              >
+                <option>Any</option>
+                <option>Small</option>
+                <option>Medium</option>
+                <option>Large</option>
+              </select>
+            </label>
           </div>
         </div>
 
@@ -123,7 +168,7 @@ export default function HomePage() {
             </p>
             <h2 className="text-2xl font-bold text-ink">Available pets</h2>
           </div>
-          <p className="text-sm text-ink/60">{pets.length} pets ready to meet adopters</p>
+          <p className="text-sm text-ink/60">{filteredPets.length} pets match current preferences</p>
         </div>
 
         {loading ? (
@@ -134,13 +179,13 @@ export default function HomePage() {
           <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-red-700">
             {error}
           </div>
-        ) : pets.length === 0 ? (
+        ) : filteredPets.length === 0 ? (
           <div className="rounded-lg border border-ink/10 bg-white p-8 text-ink/60">
-            No pets are available yet.
+            No pets match those preferences yet.
           </div>
         ) : (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {pets.map((pet) => (
+            {filteredPets.map((pet) => (
               <article
                 key={pet.id}
                 className="overflow-hidden rounded-lg border border-ink/10 bg-white shadow-sm"

@@ -1,9 +1,6 @@
 {
-  "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
+  "buildCommand": "npm --workspace packages/react-frontend run build",
+  "outputDirectory": "packages/react-frontend/dist",
   "installCommand": "npm install",
-  "env": {
-    "PET_ADOPTION_DATA_DIR": "/tmp/gitgoblins-pet-adoption"
-  }
+  "framework": "vite"
 }

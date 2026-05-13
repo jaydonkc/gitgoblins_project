@@ -1,30 +1,26 @@
 {
-  "name": "gitgoblins-pet-adoption-match",
-  "version": "0.1.0",
-  "private": true,
+  "name": "csc-307-app",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
   "scripts": {
-    "dev": "next dev --hostname 127.0.0.1 --port 3000",
-    "build": "next build",
-    "start": "next start --hostname 127.0.0.1 --port 3000",
-    "typecheck": "tsc --noEmit",
+    "test": "npm run test:e2e",
+    "start": "npm --workspace packages/react-frontend run dev -- --host 127.0.0.1 --port 3100 --strictPort",
+    "build": "npm --workspace packages/react-frontend run build",
     "cypress:run": "cypress run --e2e",
-    "test:e2e": "start-server-and-test dev http://127.0.0.1:3000 cypress:run"
+    "test:e2e": "start-server-and-test start http://127.0.0.1:3100 cypress:run",
+    "format": "prettier --write './**/*.{js,jsx,ts,tsx,css,md,json}' --config ./.prettierrc"
   },
-  "dependencies": {
-    "lucide-react": "^0.468.0",
-    "next": "^15.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
+  "workspaces": [
+    "packages/*"
+  ],
   "devDependencies": {
-    "@types/node": "^22.10.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "autoprefixer": "^10.4.20",
-    "cypress": "^13.16.0",
-    "postcss": "^8.4.49",
-    "start-server-and-test": "^2.0.9",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.2"
+    "cypress": "^13.17.0",
+    "nodemon": "^3.1.14",
+    "prettier": "^3.8.3",
+    "start-server-and-test": "^2.0.9"
   }
 }

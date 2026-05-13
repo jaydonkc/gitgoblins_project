@@ -12,9 +12,12 @@ const PetSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
+    species: {
+      type: String,
+      trim: true
+    },
     breed: {
       type: String,
-      required: true,
       trim: true
     },
     age: {
@@ -24,16 +27,43 @@ const PetSchema = new mongoose.Schema(
     },
     size: {
       type: String,
-      enum: ["small", "medium", "large"],
-      required: true
+      trim: true
+    },
+    energyLevel: {
+      type: String,
+      trim: true
+    },
+    location: {
+      type: String,
+      trim: true
     },
     description: {
       type: String,
       trim: true
     },
-    image: {
+    compatibility: {
+      type: [String],
+      default: []
+    },
+    health: {
       type: String,
-      required: true
+      trim: true
+    },
+    adoptionFee: {
+      type: Number,
+      default: 0
+    },
+    shelterName: {
+      type: String,
+      trim: true
+    },
+    shelterEmail: {
+      type: String,
+      trim: true
+    },
+    imageUrls: {
+      type: [String],
+      default: []
     },
     linked_org: {
       type: mongoose.Schema.Types.ObjectId,

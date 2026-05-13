@@ -26,6 +26,14 @@ function updatePetAvailability(id, availability) {
   );
 }
 
+function updatePetPhotos(id, imageUrls) {
+  return petModel.findByIdAndUpdate(
+    id,
+    { imageUrls },
+    { new: true, runValidators: true }
+  );
+}
+
 function getAvailablePets() {
   return petModel.find({ availability: { $ne: "adopted" } });
 }
@@ -36,5 +44,6 @@ export default {
   removePet,
   findPetById,
   updatePetAvailability,
+  updatePetPhotos,
   getAvailablePets
 };

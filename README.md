@@ -1,58 +1,42 @@
-# GitGoblins - Pet Adoption Match
+# gitgoblins_project
 
-Pet Adoption Match is a CSC 307 team project for a swipe-style pet adoption MVP.
-The current repo deliverable is the TE2 Software Requirements Document with the
-product vision, coordinated user stories, functional requirements, and
-non-functional requirements.
+In this project we will be making a web-app that allows people to find pets easier, and allows shelters to easily get their name out.
 
-## Current documents
+Contributors:
+Stearman Rubey - Project Owner,
+Jaydon Chen - Scrum Master,
+Carlos Lopez - Lead Developer
 
-- `SRD.md` - Git-friendly source of truth for the TE2 SRD/SRS.
-- `SRS_Template.docx` - optional DOCX copy/template version of the SRD.
-- `pet_adoption_mvp_v2.md` - project concept, MVP scope, stack, and risks.
-
-## Running locally
+## Running the MVP locally
 
 ```bash
 npm install
-npm run dev
+npm start
 ```
 
-Then open <http://127.0.0.1:3000>.
+Open <http://127.0.0.1:3100>.
 
 ## Testing
 
 ```bash
-npm run typecheck
+npm run build
 npm run test:e2e
 ```
 
-`npm run test:e2e` starts the Next.js dev server and runs the Cypress E2E suite
-against the adopter inquiry, saved-pet, shelter pet-creation, and photo-management flows.
+The Cypress E2E suite covers the Jaydon-authored flows:
+
+- detailed pet profile from discovery and favorites
+- save/favorite pet action
+- adoption inquiry form with contact and housing information
+- shelter pet creation
+- multiple pet-photo add, replace, remove, and profile gallery display
 
 ## Deployable demo
 
-Target: Vercel Next.js deployment using `vercel.json`.
+Frontend deployment target: Vercel static Vite deployment from `packages/react-frontend`.
 
-Live demo URL: pending until the Vercel project is connected and the first production
-deployment is published.
+Backend/API deployment target: Express app in `packages/express-backend`, with MongoDB configured through `MONGODB_URI`.
 
-Environment variables:
+Live demo URL: pending until the Vercel project is connected and the first production deployment is published.
 
-```bash
-PET_ADOPTION_DATA_DIR=/tmp/gitgoblins-pet-adoption
-```
-
-Demo data is seeded automatically when the app starts without an existing database file.
-The deployed demo can support browsing, saved pets, pet profiles, inquiries, shelter
-pet creation, and photo URL management. Current limitation: the MVP uses JSON file
-persistence, so serverless demo data may reset between deployments or serverless
-instance restarts. The production-oriented plan still calls for MongoDB and uploaded
-image storage.
-
-## Planned MVP stack
-
-- Frontend: Next.js with React, Tailwind CSS, and shadcn-compatible component primitives in `components/ui`.
-- Backend: Next.js route handlers for the local MVP API surface.
-- Database: JSON persistence for demo data, with MongoDB still planned for the production-oriented backend.
-- Image storage: image URL gallery support for the MVP, with Supabase Storage planned for uploaded files.
+Demo data is seeded in the frontend for reviewer access without setup. The current frontend MVP persists demo pets, favorites, inquiries, and photo changes in browser storage. The Express backend includes Mongo models and routes for pets, inquiries, organizations, users, and swipes for the production-oriented backend path.

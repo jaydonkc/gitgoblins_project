@@ -1,4 +1,4 @@
-# gitgoblins_project
+# Pet Adoption Match
 
 In this project we will be making a web-app that allows people to find pets easier, and allows shelters to easily get their name out.
 
@@ -15,6 +15,16 @@ npm start
 ```
 
 Open <http://127.0.0.1:3100>.
+
+The MVP frontend is a Vite React app in `packages/react-frontend`. It uses seeded demo pets and browser storage for favorites, inquiries, shelter-created pets, and photo updates.
+
+## Running the backend locally
+
+```bash
+npm --workspace packages/express-backend run dev
+```
+
+The Express backend runs on <http://localhost:8000> and expects `MONGODB_URI` for MongoDB-backed routes.
 
 ## Testing
 

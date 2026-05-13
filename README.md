@@ -18,6 +18,14 @@ The MVP frontend is a Vite React app in `packages/react-frontend`. It reads and 
 
 ## Running the backend locally
 
+From the repo root, start the backend with:
+
+```bash
+npm --workspace packages/express-backend run start
+```
+
+For development with auto-restart, use:
+
 ```bash
 npm --workspace packages/express-backend run dev
 ```

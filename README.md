@@ -14,8 +14,6 @@ npm install
 npm start
 ```
 
-Open <http://127.0.0.1:3100>.
-
 The MVP frontend is a Vite React app in `packages/react-frontend`. It uses seeded demo pets and browser storage for favorites, inquiries, shelter-created pets, and photo updates.
 
 ## Running the backend locally

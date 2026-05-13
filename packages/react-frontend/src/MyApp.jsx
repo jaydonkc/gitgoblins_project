@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-const petsKey = "gitgoblins:pets";
-const inquiriesKey = "gitgoblins:inquiries";
 const favoritesKey = "gitgoblins:favorites";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 const seedPets = [
   {
@@ -89,8 +88,33 @@ function writeJson(key, value) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
-function makeId(prefix) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`);
+  }
+
+  if (response.status === 204) return null;
+  return response.json();
+}
+
+function normalizePet(pet) {
+  return {
+    ...pet,
+    id: pet.id || pet._id,
+    species: pet.species || pet.type || "Pet",
+    imageUrls: normalizeImages(Array.isArray(pet.imageUrls) ? pet.imageUrls : []),
+    compatibility: Array.isArray(pet.compatibility) ? pet.compatibility : [],
+    adoptionFee: Number(pet.adoptionFee || 0),
+    availability: pet.availability || "available"
+  };
 }
 
 function normalizeImages(imageUrls) {
@@ -112,7 +136,7 @@ function parseRoute() {
   return { page: "home" };
 }
 
-function AppChrome({ children }) {
+function AppChrome({ children, apiStatus }) {
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -126,6 +150,7 @@ function AppChrome({ children }) {
           <a className="nav-primary" href="#/shelter">Shelter portal</a>
         </nav>
       </header>
+      {apiStatus ? <div className="api-banner">{apiStatus}</div> : null}
       <main>{children}</main>
     </div>
   );
@@ -274,18 +299,23 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry }) {
     writeJson(favoritesKey, next);
   }
 
-  function submitInquiry(event) {
+  async function submitInquiry(event) {
     event.preventDefault();
-    addInquiry({
-      id: makeId("inquiry"),
-      petId: pet.id,
-      petName: pet.name,
-      ...form,
-      status: "new",
-      createdAt: new Date().toISOString()
-    });
-    setForm(emptyInquiry);
-    setStatus(`Inquiry sent for ${pet.name}. Shelter notification logged for the MVP.`);
+    setStatus("Sending inquiry...");
+
+    try {
+      await addInquiry({
+        pet: pet._id || pet.id,
+        petId: pet.id,
+        petName: pet.name,
+        ...form,
+        status: "new"
+      });
+      setForm(emptyInquiry);
+      setStatus(`Inquiry sent for ${pet.name}. Shelter notification logged for the MVP.`);
+    } catch {
+      setStatus("Inquiry could not be saved. Check that the backend and MongoDB are running.");
+    }
   }
 
   return (
@@ -418,19 +448,26 @@ function ShelterPage({ pets, addPet }) {
     }));
   }
 
-  function submitPet(event) {
+  async function submitPet(event) {
     event.preventDefault();
     const pet = {
       ...form,
-      id: makeId("pet"),
+      type: form.species,
       adoptionFee: Number(form.adoptionFee || 0),
       compatibility: form.compatibility.split(",").map((item) => item.trim()).filter(Boolean),
       imageUrls: normalizeImages(form.imageUrls),
       availability: "available"
     };
-    addPet(pet);
-    setForm(emptyPet);
-    setStatus(`${pet.name} was created and is now visible in the discovery feed.`);
+
+    setStatus("Saving pet profile...");
+
+    try {
+      const createdPet = await addPet(pet);
+      setForm(emptyPet);
+      setStatus(`${createdPet.name} was created and is now visible in the discovery feed.`);
+    } catch {
+      setStatus("Pet profile could not be saved. Check that the backend and MongoDB are running.");
+    }
   }
 
   return (
@@ -503,10 +540,16 @@ function PhotoManagerPage({ pet, updatePetPhotos }) {
     });
   }
 
-  function savePhotos(event) {
+  async function savePhotos(event) {
     event.preventDefault();
-    updatePetPhotos(pet.id, normalizeImages(imageUrls));
-    setStatus(`Photos updated for ${pet.name}.`);
+    setStatus("Saving photos...");
+
+    try {
+      await updatePetPhotos(pet.id, normalizeImages(imageUrls));
+      setStatus(`Photos updated for ${pet.name}.`);
+    } catch {
+      setStatus("Photos could not be saved. Check that the backend and MongoDB are running.");
+    }
   }
 
   return (
@@ -559,9 +602,9 @@ function NotFound() {
 
 function MyApp() {
   const [route, setRoute] = useState(parseRoute);
-  const [pets, setPets] = useState(() => readJson(petsKey, seedPets));
+  const [pets, setPets] = useState([]);
   const [favorites, setFavorites] = useState(() => readJson(favoritesKey, []));
-  const [inquiries, setInquiries] = useState(() => readJson(inquiriesKey, []));
+  const [apiStatus, setApiStatus] = useState("Loading pets from backend...");
 
   useEffect(() => {
     const onHashChange = () => setRoute(parseRoute());
@@ -569,19 +612,68 @@ function MyApp() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  useEffect(() => writeJson(petsKey, pets), [pets]);
-  useEffect(() => writeJson(inquiriesKey, inquiries), [inquiries]);
+  useEffect(() => {
+    let ignore = false;
 
-  function addPet(pet) {
-    setPets((current) => [pet, ...current]);
+    async function loadPets() {
+      try {
+        let backendPets = await apiRequest("/pets");
+
+        if (backendPets.length === 0) {
+          backendPets = await Promise.all(
+            seedPets.map((pet) =>
+              apiRequest("/pets", {
+                method: "POST",
+                body: JSON.stringify({
+                  ...pet,
+                  type: pet.species
+                })
+              })
+            )
+          );
+        }
+
+        if (!ignore) {
+          setPets(backendPets.map(normalizePet));
+          setApiStatus("");
+        }
+      } catch {
+        if (!ignore) {
+          setPets([]);
+          setApiStatus("Backend unavailable. Start Express on port 8000 with MongoDB configured.");
+        }
+      }
+    }
+
+    loadPets();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  async function addPet(pet) {
+    const createdPet = normalizePet(await apiRequest("/pets", {
+      method: "POST",
+      body: JSON.stringify(pet)
+    }));
+    setPets((current) => [createdPet, ...current]);
+    return createdPet;
   }
 
-  function addInquiry(inquiry) {
-    setInquiries((current) => [inquiry, ...current]);
+  async function addInquiry(inquiry) {
+    return apiRequest("/inquiries", {
+      method: "POST",
+      body: JSON.stringify(inquiry)
+    });
   }
 
-  function updatePetPhotos(id, imageUrls) {
-    setPets((current) => current.map((pet) => (pet.id === id ? { ...pet, imageUrls } : pet)));
+  async function updatePetPhotos(id, imageUrls) {
+    const updatedPet = normalizePet(await apiRequest(`/pets/${id}/photos`, {
+      method: "PATCH",
+      body: JSON.stringify({ imageUrls })
+    }));
+    setPets((current) => current.map((pet) => (pet.id === id ? updatedPet : pet)));
+    return updatedPet;
   }
 
   const pet = useMemo(() => pets.find((item) => item.id === route.id), [pets, route.id]);
@@ -593,7 +685,7 @@ function MyApp() {
   else if (route.page === "photos") page = pet ? <PhotoManagerPage pet={pet} updatePetPhotos={updatePetPhotos} /> : <NotFound />;
   else page = <HomePage pets={pets} />;
 
-  return <AppChrome>{page}</AppChrome>;
+  return <AppChrome apiStatus={apiStatus}>{page}</AppChrome>;
 }
 
 export default MyApp;

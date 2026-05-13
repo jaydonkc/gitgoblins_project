@@ -68,7 +68,6 @@ const PetSchema = new mongoose.Schema(
     linked_org: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Organization",
-      required: true,
     },
     availability: {
       type: String,

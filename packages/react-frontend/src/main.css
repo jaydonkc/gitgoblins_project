@@ -48,6 +48,14 @@ img {
   z-index: 10;
 }
 
+.api-banner {
+  background: #fff7df;
+  border-bottom: 1px solid rgba(151, 96, 70, 0.22);
+  color: #6f442f;
+  font-weight: 700;
+  padding: 12px clamp(16px, 4vw, 48px);
+}
+
 .brand,
 .nav-links,
 .actions,

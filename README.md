@@ -14,7 +14,7 @@ npm install
 npm start
 ```
 
-The MVP frontend is a Vite React app in `packages/react-frontend`. It uses seeded demo pets and browser storage for favorites, inquiries, shelter-created pets, and photo updates.
+The MVP frontend is a Vite React app in `packages/react-frontend`. It reads and writes pet profiles, inquiries, and photo updates through the Express backend. Favorites are still stored in browser storage because the current backend does not include a favorites model.
 
 ## Running the backend locally
 
@@ -22,7 +22,7 @@ The MVP frontend is a Vite React app in `packages/react-frontend`. It uses seede
 npm --workspace packages/express-backend run dev
 ```
 
-The Express backend runs on <http://localhost:8000> and expects `MONGODB_URI` for MongoDB-backed routes.
+The Express backend runs on <http://localhost:8000> and expects `MONGODB_URI` for MongoDB-backed routes. The frontend uses that URL by default; set `VITE_API_BASE_URL` if the API is running somewhere else.
 
 ## Testing
 
@@ -47,4 +47,4 @@ Backend/API deployment target: Express app in `packages/express-backend`, with M
 
 Live demo URL: pending until the Vercel project is connected and the first production deployment is published.
 
-Demo data is seeded in the frontend for reviewer access without setup. The current frontend MVP persists demo pets, favorites, inquiries, and photo changes in browser storage. The Express backend includes Mongo models and routes for pets, inquiries, organizations, users, and swipes for the production-oriented backend path.
+If the backend pet collection is empty, the frontend seeds the starter pets through the Express API, so the records are stored in MongoDB before they are shown. The Express backend includes Mongo models and routes for pets, inquiries, organizations, users, and swipes.

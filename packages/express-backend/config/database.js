@@ -9,11 +9,11 @@ dotenv.config();
 
 function getMongoURI(dbname) {
   // Pull the single connection string from the environment
-  const connection_string = process.env.MONGO_CONNECTION_STRING;
+  const connection_string = process.env.MONGODB_URI || process.env.MONGO_CONNECTION_STRING;
 
   if (!connection_string) {
     console.error(
-      "Error: MONGO_CONNECTION_STRING is not defined in .env"
+      "Error: MONGODB_URI is not defined in .env"
     );
     return "";
   }
@@ -29,8 +29,13 @@ function getMongoURI(dbname) {
   return finalURI;
 }
 
-// Mongoose 6+ does not need useNewUrlParser or useUnifiedTopology
-mongoose
-  .connect(getMongoURI("primaryDB"))
-  .then(() => console.log("Successfully connected to MongoDB"))
-  .catch((error) => console.log("Connection Error:", error));
+const mongoURI = getMongoURI("primaryDB");
+
+if (mongoURI) {
+  mongoose
+    .connect(mongoURI)
+    .then(() => console.log("Successfully connected to MongoDB"))
+    .catch((error) => console.log("Connection Error:", error));
+} else {
+  console.error("MongoDB connection skipped until MONGODB_URI is configured.");
+}

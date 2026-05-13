@@ -106,11 +106,15 @@ async function apiRequest(path, options = {}) {
 }
 
 function normalizePet(pet) {
+  const imageUrls = Array.isArray(pet.imageUrls) && pet.imageUrls.length
+    ? pet.imageUrls
+    : [pet.image].filter(Boolean);
+
   return {
     ...pet,
     id: pet.id || pet._id,
     species: pet.species || pet.type || "Pet",
-    imageUrls: normalizeImages(Array.isArray(pet.imageUrls) ? pet.imageUrls : []),
+    imageUrls: normalizeImages(imageUrls),
     compatibility: Array.isArray(pet.compatibility) ? pet.compatibility : [],
     adoptionFee: Number(pet.adoptionFee || 0),
     availability: pet.availability || "available"

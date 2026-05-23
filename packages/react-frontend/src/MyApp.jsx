@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import Login from "./Login.jsx";
 
 const favoritesKey = "gitgoblins:favorites";
+const authTokenKey = "gitgoblins:authToken";
+const INVALID_TOKEN = "INVALID_TOKEN";
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 const seedPets = [
@@ -88,13 +91,28 @@ function writeJson(key, value) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
-async function apiRequest(path, options = {}) {
+function readToken() {
+  return window.localStorage.getItem(authTokenKey) || INVALID_TOKEN;
+}
+
+function addAuthHeader(token, otherHeaders = {}) {
+  if (token === INVALID_TOKEN) {
+    return otherHeaders;
+  } else {
+    return {
+      ...otherHeaders,
+      Authorization: `Bearer ${token}`
+    };
+  }
+}
+
+async function apiRequest(path, options = {}, token = readToken()) {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...options,
-    headers: {
+    headers: addAuthHeader(token, {
       "Content-Type": "application/json",
       ...options.headers
-    }
+    })
   });
 
   if (!response.ok) {
@@ -133,6 +151,8 @@ function parseRoute() {
   const parts = hash.split("/").filter(Boolean);
   if (parts[0] === "pets" && parts[1]) return { page: "profile", id: parts[1] };
   if (parts[0] === "favorites") return { page: "favorites" };
+  if (parts[0] === "login") return { page: "login" };
+  if (parts[0] === "signup") return { page: "signup" };
   if (parts[0] === "shelter" && parts[1] === "pets" && parts[2] && parts[3] === "photos") {
     return { page: "photos", id: parts[2] };
   }
@@ -140,7 +160,7 @@ function parseRoute() {
   return { page: "home" };
 }
 
-function AppChrome({ children, apiStatus }) {
+function AppChrome({ children, apiStatus, isAuthenticated, onLogout }) {
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -151,7 +171,17 @@ function AppChrome({ children, apiStatus }) {
         <nav className="nav-links">
           <a href="#/">Browse</a>
           <a href="#/favorites">Favorites</a>
-          <a className="nav-primary" href="#/shelter">Shelter portal</a>
+          {isAuthenticated ? (
+            <>
+              <a className="nav-primary" href="#/shelter">Shelter portal</a>
+              <button type="button" className="nav-button" onClick={onLogout}>Log out</button>
+            </>
+          ) : (
+            <>
+              <a href="#/login">Log in</a>
+              <a className="nav-primary" href="#/signup">Sign up</a>
+            </>
+          )}
         </nav>
       </header>
       {apiStatus ? <div className="api-banner">{apiStatus}</div> : null}
@@ -215,6 +245,44 @@ function Field({ label, children, hint }) {
       {children}
       {hint ? <small>{hint}</small> : null}
     </label>
+  );
+}
+
+function LoginPage({ mode, handleSubmit, message, isAuthenticated }) {
+  const isSignup = mode === "signup";
+
+  return (
+    <section className="auth-layout">
+      <div className="panel auth-panel">
+        <span className="eyebrow">{isSignup ? "Create account" : "Welcome back"}</span>
+        <h1>{isSignup ? "Sign up" : "Log in"}</h1>
+        {isAuthenticated ? <div className="success">You are authenticated.</div> : null}
+        {message ? <div className="api-banner inline">{message}</div> : null}
+        <Login handleSubmit={handleSubmit} buttonLabel={isSignup ? "Sign Up" : "Log In"} />
+        <p className="muted">
+          {isSignup ? "Already have an account? " : "Need an account? "}
+          <a className="text-link" href={isSignup ? "#/login" : "#/signup"}>
+            {isSignup ? "Log in" : "Sign up"}
+          </a>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function LoginRequired({ title = "Login required" }) {
+  return (
+    <section className="section">
+      <div className="panel">
+        <span className="eyebrow">Protected page</span>
+        <h1>{title}</h1>
+        <p>Sign in before creating pet profiles, managing photos, or sending adoption inquiries.</p>
+        <div className="actions">
+          <a className="button primary" href="#/login">Log in</a>
+          <a className="button secondary" href="#/signup">Sign up</a>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -288,7 +356,7 @@ function HomePage({ pets }) {
   );
 }
 
-function ProfilePage({ pet, favorites, setFavorites, addInquiry }) {
+function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated }) {
   const [form, setForm] = useState(emptyInquiry);
   const [status, setStatus] = useState("");
   const saved = favorites.includes(pet.id);
@@ -305,6 +373,12 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry }) {
 
   async function submitInquiry(event) {
     event.preventDefault();
+
+    if (!isAuthenticated) {
+      setStatus("Please log in before submitting an adoption inquiry.");
+      return;
+    }
+
     setStatus("Sending inquiry...");
 
     try {
@@ -608,7 +682,10 @@ function MyApp() {
   const [route, setRoute] = useState(parseRoute);
   const [pets, setPets] = useState([]);
   const [favorites, setFavorites] = useState(() => readJson(favoritesKey, []));
+  const [token, setToken] = useState(readToken);
+  const [message, setMessage] = useState("");
   const [apiStatus, setApiStatus] = useState("Loading pets from backend...");
+  const isAuthenticated = token !== INVALID_TOKEN;
 
   useEffect(() => {
     const onHashChange = () => setRoute(parseRoute());
@@ -624,22 +701,12 @@ function MyApp() {
         let backendPets = await apiRequest("/pets");
 
         if (backendPets.length === 0) {
-          backendPets = await Promise.all(
-            seedPets.map((pet) =>
-              apiRequest("/pets", {
-                method: "POST",
-                body: JSON.stringify({
-                  ...pet,
-                  type: pet.species
-                })
-              })
-            )
-          );
+          backendPets = seedPets;
         }
 
         if (!ignore) {
           setPets(backendPets.map(normalizePet));
-          setApiStatus("");
+          setApiStatus(backendPets === seedPets ? "Showing starter pet data. Log in to create saved backend records." : "");
         }
       } catch {
         if (!ignore) {
@@ -655,11 +722,75 @@ function MyApp() {
     };
   }, []);
 
+  function saveToken(nextToken) {
+    window.localStorage.setItem(authTokenKey, nextToken);
+    setToken(nextToken);
+  }
+
+  function logoutUser() {
+    window.localStorage.removeItem(authTokenKey);
+    setToken(INVALID_TOKEN);
+    setMessage("Logged out.");
+    window.location.hash = "#/";
+  }
+
+  function loginUser(creds) {
+    const promise = fetch(`${apiBaseUrl}/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(creds)
+    })
+      .then((response) => {
+        if (response.status === 200) {
+          response
+            .json()
+            .then((payload) => saveToken(payload.token));
+          setMessage("Login successful; auth token saved");
+          window.location.hash = "#/shelter";
+        } else {
+          setMessage(`Login Error ${response.status}: Unauthorized`);
+        }
+      })
+      .catch((error) => {
+        setMessage(`Login Error: ${error}`);
+      });
+
+    return promise;
+  }
+
+  function signupUser(creds) {
+    const promise = fetch(`${apiBaseUrl}/signup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(creds)
+    })
+      .then((response) => {
+        if (response.status === 201) {
+          response
+            .json()
+            .then((payload) => saveToken(payload.token));
+          setMessage(`Signup successful for user: ${creds.username}; auth token saved`);
+          window.location.hash = "#/shelter";
+        } else {
+          setMessage(`Signup Error ${response.status}`);
+        }
+      })
+      .catch((error) => {
+        setMessage(`Signup Error: ${error}`);
+      });
+
+    return promise;
+  }
+
   async function addPet(pet) {
     const createdPet = normalizePet(await apiRequest("/pets", {
       method: "POST",
       body: JSON.stringify(pet)
-    }));
+    }, token));
     setPets((current) => [createdPet, ...current]);
     return createdPet;
   }
@@ -668,14 +799,14 @@ function MyApp() {
     return apiRequest("/inquiries", {
       method: "POST",
       body: JSON.stringify(inquiry)
-    });
+    }, token);
   }
 
   async function updatePetPhotos(id, imageUrls) {
     const updatedPet = normalizePet(await apiRequest(`/pets/${id}/photos`, {
       method: "PATCH",
       body: JSON.stringify({ imageUrls })
-    }));
+    }, token));
     setPets((current) => current.map((pet) => (pet.id === id ? updatedPet : pet)));
     return updatedPet;
   }
@@ -683,13 +814,15 @@ function MyApp() {
   const pet = useMemo(() => pets.find((item) => item.id === route.id), [pets, route.id]);
 
   let page;
-  if (route.page === "profile") page = pet ? <ProfilePage pet={pet} favorites={favorites} setFavorites={setFavorites} addInquiry={addInquiry} /> : <NotFound />;
+  if (route.page === "login") page = <LoginPage mode="login" handleSubmit={loginUser} message={message} isAuthenticated={isAuthenticated} />;
+  else if (route.page === "signup") page = <LoginPage mode="signup" handleSubmit={signupUser} message={message} isAuthenticated={isAuthenticated} />;
+  else if (route.page === "profile") page = pet ? <ProfilePage pet={pet} favorites={favorites} setFavorites={setFavorites} addInquiry={addInquiry} isAuthenticated={isAuthenticated} /> : <NotFound />;
   else if (route.page === "favorites") page = <FavoritesPage pets={pets} favoriteIds={favorites} />;
-  else if (route.page === "shelter") page = <ShelterPage pets={pets} addPet={addPet} />;
-  else if (route.page === "photos") page = pet ? <PhotoManagerPage pet={pet} updatePetPhotos={updatePetPhotos} /> : <NotFound />;
+  else if (route.page === "shelter") page = isAuthenticated ? <ShelterPage pets={pets} addPet={addPet} /> : <LoginRequired title="Log in to use the shelter portal" />;
+  else if (route.page === "photos") page = isAuthenticated ? (pet ? <PhotoManagerPage pet={pet} updatePetPhotos={updatePetPhotos} /> : <NotFound />) : <LoginRequired title="Log in to manage photos" />;
   else page = <HomePage pets={pets} />;
 
-  return <AppChrome apiStatus={apiStatus}>{page}</AppChrome>;
+  return <AppChrome apiStatus={apiStatus} isAuthenticated={isAuthenticated} onLogout={logoutUser}>{page}</AppChrome>;
 }
 
 export default MyApp;

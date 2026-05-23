@@ -7,12 +7,16 @@ import orgRoutes from "./routes/org-routes.js";
 import petRoutes from "./routes/pet-routes.js";
 import inquiryRoutes from "./routes/inquiry-routes.js";
 import swipeRoutes from "./routes/swipe-routes.js";
+import { loginUser, registerUser } from "./auth.js";
 
 const app = express();
 const port = 8000;
 
 app.use(cors());
 app.use(express.json());
+
+app.post("/signup", registerUser);
+app.post("/login", loginUser);
 
 app.use("/users", userRoutes);
 app.use("/orgs", orgRoutes);

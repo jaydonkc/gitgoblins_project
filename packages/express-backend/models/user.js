@@ -8,6 +8,12 @@ const UserSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
+    username: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true
+    },
     email: {
       type: String,
       required: true,
@@ -19,6 +25,9 @@ const UserSchema = new mongoose.Schema(
             "Invalid email, must be at least 2 characters."
           );
       }
+    },
+    hashedPassword: {
+      type: String
     }
   },
   {

@@ -3,6 +3,7 @@
 import express from "express";
 const router = express.Router();
 import petService from "../services/pet-service.js";
+import { authenticateUser } from "../auth.js";
 
 const {
   addPet,
@@ -25,7 +26,7 @@ router.get("/", (req, res) => {
     });
 });
 
-router.post("/", (req, res) => {
+router.post("/", authenticateUser, (req, res) => {
   const petToAdd = req.body;
 
   if (
@@ -55,7 +56,7 @@ router.post("/", (req, res) => {
   }
 });
 
-router.patch("/:id/photos", (req, res) => {
+router.patch("/:id/photos", authenticateUser, (req, res) => {
   const id = req.params["id"];
   const imageUrls = Array.isArray(req.body.imageUrls)
     ? req.body.imageUrls.map((url) => String(url).trim()).filter(Boolean)
@@ -75,7 +76,7 @@ router.patch("/:id/photos", (req, res) => {
     });
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/:id", authenticateUser, (req, res) => {
   const id = req.params["id"];
 
   removePet(id)
@@ -114,7 +115,7 @@ router.get("/discover/available", (req, res) => {
     });
 });
 
-router.patch("/:id/availability", (req, res) => {
+router.patch("/:id/availability", authenticateUser, (req, res) => {
   const id = req.params["id"];
   const { availability } = req.body;
 

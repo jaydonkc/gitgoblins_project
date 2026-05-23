@@ -28,6 +28,12 @@ const UserSchema = new mongoose.Schema(
     },
     hashedPassword: {
       type: String
+    },
+    role: {
+      type: String,
+      enum: ["adopter", "organization"],
+      default: "adopter",
+      required: true
     }
   },
   {

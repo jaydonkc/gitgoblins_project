@@ -3,6 +3,8 @@ import Login from "./Login.jsx";
 
 const favoritesKey = "gitgoblins:favorites";
 const authTokenKey = "gitgoblins:authToken";
+const authRoleKey = "gitgoblins:authRole";
+const authUsernameKey = "gitgoblins:authUsername";
 const INVALID_TOKEN = "INVALID_TOKEN";
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -95,6 +97,14 @@ function readToken() {
   return window.localStorage.getItem(authTokenKey) || INVALID_TOKEN;
 }
 
+function readRole() {
+  return window.localStorage.getItem(authRoleKey) || "";
+}
+
+function readUsername() {
+  return window.localStorage.getItem(authUsernameKey) || "";
+}
+
 function addAuthHeader(token, otherHeaders = {}) {
   if (token === INVALID_TOKEN) {
     return otherHeaders;
@@ -160,7 +170,7 @@ function parseRoute() {
   return { page: "home" };
 }
 
-function AppChrome({ children, apiStatus, isAuthenticated, onLogout }) {
+function AppChrome({ children, apiStatus, isAuthenticated, isOrganization, onLogout }) {
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -173,7 +183,7 @@ function AppChrome({ children, apiStatus, isAuthenticated, onLogout }) {
           <a href="#/favorites">Favorites</a>
           {isAuthenticated ? (
             <>
-              <a className="nav-primary" href="#/shelter">Shelter portal</a>
+              {isOrganization ? <a className="nav-primary" href="#/shelter">Shelter portal</a> : null}
               <button type="button" className="nav-button" onClick={onLogout}>Log out</button>
             </>
           ) : (
@@ -258,7 +268,11 @@ function LoginPage({ mode, handleSubmit, message, isAuthenticated }) {
         <h1>{isSignup ? "Sign up" : "Log in"}</h1>
         {isAuthenticated ? <div className="success">You are authenticated.</div> : null}
         {message ? <div className="api-banner inline">{message}</div> : null}
-        <Login handleSubmit={handleSubmit} buttonLabel={isSignup ? "Sign Up" : "Log In"} />
+        <Login
+          handleSubmit={handleSubmit}
+          buttonLabel={isSignup ? "Sign Up" : "Log In"}
+          showRoleChoice={isSignup}
+        />
         <p className="muted">
           {isSignup ? "Already have an account? " : "Need an account? "}
           <a className="text-link" href={isSignup ? "#/login" : "#/signup"}>
@@ -270,13 +284,13 @@ function LoginPage({ mode, handleSubmit, message, isAuthenticated }) {
   );
 }
 
-function LoginRequired({ title = "Login required" }) {
+function LoginRequired({ title = "Login required", message = "Sign in before creating pet profiles, managing photos, or sending adoption inquiries." }) {
   return (
     <section className="section">
       <div className="panel">
         <span className="eyebrow">Protected page</span>
         <h1>{title}</h1>
-        <p>Sign in before creating pet profiles, managing photos, or sending adoption inquiries.</p>
+        <p>{message}</p>
         <div className="actions">
           <a className="button primary" href="#/login">Log in</a>
           <a className="button secondary" href="#/signup">Sign up</a>
@@ -683,9 +697,12 @@ function MyApp() {
   const [pets, setPets] = useState([]);
   const [favorites, setFavorites] = useState(() => readJson(favoritesKey, []));
   const [token, setToken] = useState(readToken);
+  const [role, setRole] = useState(readRole);
+  const [username, setUsername] = useState(readUsername);
   const [message, setMessage] = useState("");
   const [apiStatus, setApiStatus] = useState("Loading pets from backend...");
   const isAuthenticated = token !== INVALID_TOKEN;
+  const isOrganization = role === "organization";
 
   useEffect(() => {
     const onHashChange = () => setRoute(parseRoute());
@@ -722,14 +739,25 @@ function MyApp() {
     };
   }, []);
 
-  function saveToken(nextToken) {
-    window.localStorage.setItem(authTokenKey, nextToken);
-    setToken(nextToken);
+  function saveAuth(payload, fallbackUsername) {
+    const nextRole = payload.role || "adopter";
+    const nextUsername = payload.username || fallbackUsername || "";
+
+    window.localStorage.setItem(authTokenKey, payload.token);
+    window.localStorage.setItem(authRoleKey, nextRole);
+    window.localStorage.setItem(authUsernameKey, nextUsername);
+    setToken(payload.token);
+    setRole(nextRole);
+    setUsername(nextUsername);
   }
 
   function logoutUser() {
     window.localStorage.removeItem(authTokenKey);
+    window.localStorage.removeItem(authRoleKey);
+    window.localStorage.removeItem(authUsernameKey);
     setToken(INVALID_TOKEN);
+    setRole("");
+    setUsername("");
     setMessage("Logged out.");
     window.location.hash = "#/";
   }
@@ -746,9 +774,11 @@ function MyApp() {
         if (response.status === 200) {
           response
             .json()
-            .then((payload) => saveToken(payload.token));
+            .then((payload) => {
+              saveAuth(payload, creds.username);
+              window.location.hash = payload.role === "organization" ? "#/shelter" : "#/";
+            });
           setMessage("Login successful; auth token saved");
-          window.location.hash = "#/shelter";
         } else {
           setMessage(`Login Error ${response.status}: Unauthorized`);
         }
@@ -772,11 +802,15 @@ function MyApp() {
         if (response.status === 201) {
           response
             .json()
-            .then((payload) => saveToken(payload.token));
+            .then((payload) => {
+              saveAuth(payload, creds.username);
+              window.location.hash = payload.role === "organization" ? "#/shelter" : "#/";
+            });
           setMessage(`Signup successful for user: ${creds.username}; auth token saved`);
-          window.location.hash = "#/shelter";
         } else {
-          setMessage(`Signup Error ${response.status}`);
+          response.text().then((errorMessage) => {
+            setMessage(errorMessage || `Signup Error ${response.status}`);
+          });
         }
       })
       .catch((error) => {
@@ -818,11 +852,11 @@ function MyApp() {
   else if (route.page === "signup") page = <LoginPage mode="signup" handleSubmit={signupUser} message={message} isAuthenticated={isAuthenticated} />;
   else if (route.page === "profile") page = pet ? <ProfilePage pet={pet} favorites={favorites} setFavorites={setFavorites} addInquiry={addInquiry} isAuthenticated={isAuthenticated} /> : <NotFound />;
   else if (route.page === "favorites") page = <FavoritesPage pets={pets} favoriteIds={favorites} />;
-  else if (route.page === "shelter") page = isAuthenticated ? <ShelterPage pets={pets} addPet={addPet} /> : <LoginRequired title="Log in to use the shelter portal" />;
-  else if (route.page === "photos") page = isAuthenticated ? (pet ? <PhotoManagerPage pet={pet} updatePetPhotos={updatePetPhotos} /> : <NotFound />) : <LoginRequired title="Log in to manage photos" />;
+  else if (route.page === "shelter") page = isOrganization ? <ShelterPage pets={pets.filter((item) => item.ownerUsername === username)} addPet={addPet} /> : <LoginRequired title={isAuthenticated ? "Organization account required" : "Log in to use the shelter portal"} message={isAuthenticated ? "Only organization accounts can create and manage pet profiles." : undefined} />;
+  else if (route.page === "photos") page = isOrganization ? (pet ? <PhotoManagerPage pet={pet} updatePetPhotos={updatePetPhotos} /> : <NotFound />) : <LoginRequired title={isAuthenticated ? "Organization account required" : "Log in to manage photos"} message={isAuthenticated ? "Only organization accounts can manage pet photos." : undefined} />;
   else page = <HomePage pets={pets} />;
 
-  return <AppChrome apiStatus={apiStatus} isAuthenticated={isAuthenticated} onLogout={logoutUser}>{page}</AppChrome>;
+  return <AppChrome apiStatus={apiStatus} isAuthenticated={isAuthenticated} isOrganization={isOrganization} onLogout={logoutUser}>{page}</AppChrome>;
 }
 
 export default MyApp;

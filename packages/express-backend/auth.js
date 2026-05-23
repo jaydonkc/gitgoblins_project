@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import userModel from "./models/user.js";
 
-function generateAccessToken(username) {
+function generateAccessToken(username, role) {
   return new Promise((resolve, reject) => {
     const tokenSecret = process.env.TOKEN_SECRET;
 
@@ -12,7 +12,7 @@ function generateAccessToken(username) {
     }
 
     jwt.sign(
-      { username: username },
+      { username: username, role: role },
       tokenSecret,
       { expiresIn: "1d" },
       (error, token) => {
@@ -27,7 +27,8 @@ function generateAccessToken(username) {
 }
 
 export function registerUser(req, res) {
-  const { username, pwd } = req.body; // from form
+  const { username, pwd, role = "adopter" } = req.body; // from form
+  const normalizedRole = role === "organization" ? "organization" : "adopter";
 
   if (!username || !pwd) {
     res.status(400).send("Bad request: Invalid input data.");
@@ -48,13 +49,14 @@ export function registerUser(req, res) {
               username,
               name: username,
               email: `${username}@auth.local`,
-              hashedPassword
+              hashedPassword,
+              role: normalizedRole
             })
           )
-          .then(() => generateAccessToken(username))
+          .then(() => generateAccessToken(username, normalizedRole))
           .then((token) => {
             console.log("Token:", token);
-            res.status(201).send({ token: token });
+            res.status(201).send({ token: token, role: normalizedRole, username });
           });
       })
       .catch((error) => {
@@ -78,8 +80,12 @@ export function loginUser(req, res) {
           .compare(pwd, retrievedUser.hashedPassword)
           .then((matched) => {
             if (matched) {
-              generateAccessToken(username).then((token) => {
-                res.status(200).send({ token: token });
+              generateAccessToken(username, retrievedUser.role).then((token) => {
+                res.status(200).send({
+                  token: token,
+                  role: retrievedUser.role,
+                  username
+                });
               });
             } else {
               // invalid password
@@ -122,5 +128,13 @@ export function authenticateUser(req, res, next) {
         }
       }
     );
+  }
+}
+
+export function requireOrganization(req, res, next) {
+  if (req.user?.role === "organization") {
+    next();
+  } else {
+    res.status(403).send("Forbidden: organization account required");
   }
 }

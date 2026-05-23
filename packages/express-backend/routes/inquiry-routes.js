@@ -3,11 +3,11 @@
 import express from "express";
 const router = express.Router();
 import inquiryService from "../services/inquiry-service.js";
-import { authenticateUser } from "../auth.js";
+import { authenticateUser, requireOrganization } from "../auth.js";
 
 const { addInquiry, getInquiries, findInquiryById, removeInquiry } = inquiryService;
 
-router.get("/", authenticateUser, (req, res) => {
+router.get("/", authenticateUser, requireOrganization, (req, res) => {
 
   getInquiries()
     .then((inquiries) => {
@@ -49,7 +49,7 @@ router.post("/", authenticateUser, (req, res) => {
   }
 });
 
-router.delete("/:id", authenticateUser, (req, res) => {
+router.delete("/:id", authenticateUser, requireOrganization, (req, res) => {
   const id = req.params["id"];
 
   removeInquiry(id)
@@ -62,7 +62,7 @@ router.delete("/:id", authenticateUser, (req, res) => {
     });
 });
 
-router.get("/:id", authenticateUser, (req, res) => {
+router.get("/:id", authenticateUser, requireOrganization, (req, res) => {
   const id = req.params["id"]; //or req.params.id
 
   findInquiryById(id)

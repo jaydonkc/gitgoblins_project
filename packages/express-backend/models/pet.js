@@ -61,6 +61,10 @@ const PetSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
+    ownerUsername: {
+      type: String,
+      trim: true
+    },
     imageUrls: {
       type: [String],
       default: []

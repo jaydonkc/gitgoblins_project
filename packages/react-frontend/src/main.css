@@ -109,9 +109,22 @@ img {
   color: white;
 }
 
+.nav-primary:hover,
+.button.primary:hover {
+  background: #536241;
+  border-color: #536241;
+  color: white;
+}
+
 .button.dark {
   background: #26342f;
   border: 1px solid #26342f;
+  color: white;
+}
+
+.button.dark:hover {
+  background: #1b2723;
+  border-color: #1b2723;
   color: white;
 }
 

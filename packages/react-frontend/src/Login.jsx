@@ -3,7 +3,8 @@ import React, { useState } from "react";
 function Login(props) {
   const [creds, setCreds] = useState({
     username: "",
-    pwd: ""
+    pwd: "",
+    role: "adopter"
   });
 
   return (
@@ -30,6 +31,20 @@ function Login(props) {
           required
         />
       </label>
+      {props.showRoleChoice ? (
+        <label className="field" htmlFor="role">
+          <span>Account type</span>
+          <select
+            name="role"
+            id="role"
+            value={creds.role}
+            onChange={handleChange}
+          >
+            <option value="adopter">Adopter</option>
+            <option value="organization">Organization</option>
+          </select>
+        </label>
+      ) : null}
       <button className="button primary" type="submit">
         {props.buttonLabel || "Log In"}
       </button>
@@ -45,6 +60,9 @@ function Login(props) {
       case "password":
         setCreds({ ...creds, pwd: value });
         break;
+      case "role":
+        setCreds({ ...creds, role: value });
+        break;
       default:
         break;
     }
@@ -53,7 +71,7 @@ function Login(props) {
   function submitForm(event) {
     event.preventDefault();
     props.handleSubmit(creds);
-    setCreds({ username: "", pwd: "" });
+    setCreds({ username: "", pwd: "", role: "adopter" });
   }
 }
 export default Login;

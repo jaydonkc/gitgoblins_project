@@ -3,7 +3,7 @@
 import express from "express";
 const router = express.Router();
 import orgService from "../services/org-service.js";
-import { authenticateUser } from "../auth.js";
+import { authenticateUser, requireOrganization } from "../auth.js";
 
 const { addOrg, getOrgs, findOrgById, removeOrg } = orgService;
 
@@ -18,7 +18,7 @@ router.get("/", (req, res) => {
     });
 });
 
-router.post("/", authenticateUser, (req, res) => {
+router.post("/", authenticateUser, requireOrganization, (req, res) => {
   const orgToAdd = req.body;
 
   if (
@@ -40,7 +40,7 @@ router.post("/", authenticateUser, (req, res) => {
   }
 });
 
-router.delete("/:id", authenticateUser, (req, res) => {
+router.delete("/:id", authenticateUser, requireOrganization, (req, res) => {
   const id = req.params["id"];
 
   removeOrg(id)

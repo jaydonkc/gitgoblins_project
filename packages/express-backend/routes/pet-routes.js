@@ -3,15 +3,15 @@
 import express from "express";
 const router = express.Router();
 import petService from "../services/pet-service.js";
-import { authenticateUser } from "../auth.js";
+import { authenticateUser, requireOrganization } from "../auth.js";
 
 const {
   addPet,
   getPets,
   findPetById,
-  removePet,
-  updatePetAvailability,
-  updatePetPhotos,
+  removePetForOwner,
+  updatePetAvailabilityForOwner,
+  updatePetPhotosForOwner,
   getAvailablePets
 } = petService;
 
@@ -26,7 +26,7 @@ router.get("/", (req, res) => {
     });
 });
 
-router.post("/", authenticateUser, (req, res) => {
+router.post("/", authenticateUser, requireOrganization, (req, res) => {
   const petToAdd = req.body;
 
   if (
@@ -41,6 +41,7 @@ router.post("/", authenticateUser, (req, res) => {
       ...petToAdd,
       type: petToAdd.type || petToAdd.species,
       species: petToAdd.species || petToAdd.type,
+      ownerUsername: req.user.username,
       imageUrls: Array.isArray(petToAdd.imageUrls) ? petToAdd.imageUrls.filter(Boolean) : []
     };
     addPet(newPet)
@@ -56,16 +57,16 @@ router.post("/", authenticateUser, (req, res) => {
   }
 });
 
-router.patch("/:id/photos", authenticateUser, (req, res) => {
+router.patch("/:id/photos", authenticateUser, requireOrganization, (req, res) => {
   const id = req.params["id"];
   const imageUrls = Array.isArray(req.body.imageUrls)
     ? req.body.imageUrls.map((url) => String(url).trim()).filter(Boolean)
     : [];
 
-  updatePetPhotos(id, imageUrls)
+  updatePetPhotosForOwner(id, imageUrls, req.user.username)
     .then((pet) => {
       if (!pet) {
-        res.status(404).send("Pet not found.");
+        res.status(403).send("Forbidden: you can only manage your own pet profiles.");
       } else {
         res.send(pet);
       }
@@ -76,12 +77,16 @@ router.patch("/:id/photos", authenticateUser, (req, res) => {
     });
 });
 
-router.delete("/:id", authenticateUser, (req, res) => {
+router.delete("/:id", authenticateUser, requireOrganization, (req, res) => {
   const id = req.params["id"];
 
-  removePet(id)
-    .then(() => {
-      res.status(204).send();
+  removePetForOwner(id, req.user.username)
+    .then((pet) => {
+      if (!pet) {
+        res.status(403).send("Forbidden: you can only manage your own pet profiles.");
+      } else {
+        res.status(204).send();
+      }
     })
     .catch((error) => {
       console.log(error);
@@ -115,7 +120,7 @@ router.get("/discover/available", (req, res) => {
     });
 });
 
-router.patch("/:id/availability", authenticateUser, (req, res) => {
+router.patch("/:id/availability", authenticateUser, requireOrganization, (req, res) => {
   const id = req.params["id"];
   const { availability } = req.body;
 
@@ -124,10 +129,10 @@ router.patch("/:id/availability", authenticateUser, (req, res) => {
     return;
   }
 
-  updatePetAvailability(id, availability)
+  updatePetAvailabilityForOwner(id, availability, req.user.username)
     .then((pet) => {
       if (!pet) {
-        res.status(404).send("Pet not found.");
+        res.status(403).send("Forbidden: you can only manage your own pet profiles.");
       } else {
         res.send(pet);
       }

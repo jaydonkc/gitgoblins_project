@@ -80,6 +80,8 @@ const emptyInquiry = {
   message: ""
 };
 
+const inquiryStatuses = ["new", "contacted", "approved", "rejected"];
+
 function readJson(key, fallback) {
   try {
     const stored = window.localStorage.getItem(key);
@@ -131,6 +133,20 @@ async function apiRequest(path, options = {}, token = readToken()) {
 
   if (response.status === 204) return null;
   return response.json();
+}
+
+function normalizeInquiry(inquiry) {
+  return {
+    ...inquiry,
+    id: inquiry.id || inquiry._id,
+    petName: inquiry.pet?.name || inquiry.petName || "Unknown pet",
+    name: inquiry.user?.name || inquiry.name || "Unknown adopter",
+    email: inquiry.user?.email || inquiry.email || "No email provided",
+    phone: inquiry.phone || "No phone provided",
+    housing: inquiry.housing || "No housing information provided",
+    message: inquiry.message || "No message provided",
+    date: inquiry.date || inquiry.createdAt || ""
+  };
 }
 
 function normalizePet(pet) {
@@ -298,6 +314,17 @@ function LoginRequired({ title = "Login required", message = "Sign in before cre
       </div>
     </section>
   );
+}
+
+function formatSubmittedDate(date) {
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) return "Unknown date";
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(parsedDate);
 }
 
 function HomePage({ pets }) {
@@ -513,9 +540,11 @@ function FavoritesPage({ pets, favoriteIds }) {
   );
 }
 
-function ShelterPage({ pets, addPet }) {
+function ShelterPage({ pets, inquiries, addPet, updateInquiryStatus }) {
   const [form, setForm] = useState(emptyPet);
   const [status, setStatus] = useState("");
+  const [inquiryStatusMessage, setInquiryStatusMessage] = useState("");
+  const [updatingInquiryId, setUpdatingInquiryId] = useState("");
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -559,6 +588,20 @@ function ShelterPage({ pets, addPet }) {
       setStatus(`${createdPet.name} was created and is now visible in the discovery feed.`);
     } catch {
       setStatus("Pet profile could not be saved. Check that the backend and MongoDB are running.");
+    }
+  }
+
+  async function changeInquiryStatus(inquiry, nextStatus) {
+    setInquiryStatusMessage(`Updating ${inquiry.petName} inquiry...`);
+    setUpdatingInquiryId(inquiry.id);
+
+    try {
+      await updateInquiryStatus(inquiry.id, nextStatus);
+      setInquiryStatusMessage(`${inquiry.petName} inquiry marked ${nextStatus}.`);
+    } catch {
+      setInquiryStatusMessage("Inquiry status could not be saved. Check that the backend is running.");
+    } finally {
+      setUpdatingInquiryId("");
     }
   }
 
@@ -615,6 +658,67 @@ function ShelterPage({ pets, addPet }) {
           ))}
         </div>
       </aside>
+      <section className="panel inquiry-panel">
+        <div className="section-heading compact">
+          <div>
+            <span className="eyebrow">Adopter follow-up</span>
+            <h2>Submitted inquiries</h2>
+          </div>
+          <p>{inquiries.length} total</p>
+        </div>
+        {inquiryStatusMessage ? (
+          <div className="success" data-cy="inquiry-status-message">{inquiryStatusMessage}</div>
+        ) : null}
+        {inquiries.length === 0 ? (
+          <div className="empty-state" data-cy="inquiries-empty">
+            No adoption inquiries have been submitted yet.
+          </div>
+        ) : (
+          <div className="inquiry-list" data-cy="inquiry-list">
+            {inquiries.map((inquiry) => (
+              <article className="inquiry-item" key={inquiry.id} data-cy="inquiry-item">
+                <div className="inquiry-heading">
+                  <div>
+                    <h3>{inquiry.petName}</h3>
+                    <p>{formatSubmittedDate(inquiry.date)}</p>
+                  </div>
+                  <label className="status-control">
+                    <span>Status</span>
+                    <select
+                      value={inquiry.status || "new"}
+                      onChange={(event) => changeInquiryStatus(inquiry, event.target.value)}
+                      disabled={updatingInquiryId === inquiry.id}
+                      data-cy="inquiry-status-select"
+                    >
+                      {inquiryStatuses.map((statusOption) => (
+                        <option key={statusOption} value={statusOption}>
+                          {statusOption}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="inquiry-details">
+                  <div>
+                    <span>Adopter</span>
+                    <strong>{inquiry.name}</strong>
+                    <a href={`mailto:${inquiry.email}`}>{inquiry.email}</a>
+                    <a href={`tel:${inquiry.phone}`}>{inquiry.phone}</a>
+                  </div>
+                  <div>
+                    <span>Housing</span>
+                    <p>{inquiry.housing}</p>
+                  </div>
+                  <div>
+                    <span>Message</span>
+                    <p>{inquiry.message}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
     </section>
   );
 }
@@ -695,6 +799,7 @@ function NotFound() {
 function MyApp() {
   const [route, setRoute] = useState(parseRoute);
   const [pets, setPets] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
   const [favorites, setFavorites] = useState(() => readJson(favoritesKey, []));
   const [token, setToken] = useState(readToken);
   const [role, setRole] = useState(readRole);
@@ -820,6 +925,34 @@ function MyApp() {
     return promise;
   }
 
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadInquiries() {
+      if (!isOrganization) {
+        setInquiries([]);
+        return;
+      }
+
+      try {
+        const backendInquiries = await apiRequest("/inquiries", {}, token);
+
+        if (!ignore) {
+          setInquiries(backendInquiries.map(normalizeInquiry));
+        }
+      } catch {
+        if (!ignore) {
+          setInquiries([]);
+        }
+      }
+    }
+
+    loadInquiries();
+    return () => {
+      ignore = true;
+    };
+  }, [isOrganization, token]);
+
   async function addPet(pet) {
     const createdPet = normalizePet(await apiRequest("/pets", {
       method: "POST",
@@ -830,10 +963,23 @@ function MyApp() {
   }
 
   async function addInquiry(inquiry) {
-    return apiRequest("/inquiries", {
+    const createdInquiry = normalizeInquiry(await apiRequest("/inquiries", {
       method: "POST",
       body: JSON.stringify(inquiry)
-    }, token);
+    }, token));
+    setInquiries((current) => [createdInquiry, ...current]);
+    return createdInquiry;
+  }
+
+  async function updateInquiryStatus(id, status) {
+    const updatedInquiry = normalizeInquiry(await apiRequest(`/inquiries/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status })
+    }, token));
+    setInquiries((current) =>
+      current.map((inquiry) => (inquiry.id === id ? updatedInquiry : inquiry))
+    );
+    return updatedInquiry;
   }
 
   async function updatePetPhotos(id, imageUrls) {
@@ -852,7 +998,7 @@ function MyApp() {
   else if (route.page === "signup") page = <LoginPage mode="signup" handleSubmit={signupUser} message={message} isAuthenticated={isAuthenticated} />;
   else if (route.page === "profile") page = pet ? <ProfilePage pet={pet} favorites={favorites} setFavorites={setFavorites} addInquiry={addInquiry} isAuthenticated={isAuthenticated} /> : <NotFound />;
   else if (route.page === "favorites") page = <FavoritesPage pets={pets} favoriteIds={favorites} />;
-  else if (route.page === "shelter") page = isOrganization ? <ShelterPage pets={pets.filter((item) => item.ownerUsername === username)} addPet={addPet} /> : <LoginRequired title={isAuthenticated ? "Organization account required" : "Log in to use the shelter portal"} message={isAuthenticated ? "Only organization accounts can create and manage pet profiles." : undefined} />;
+  else if (route.page === "shelter") page = isOrganization ? <ShelterPage pets={pets.filter((item) => item.ownerUsername === username)} inquiries={inquiries} addPet={addPet} updateInquiryStatus={updateInquiryStatus} /> : <LoginRequired title={isAuthenticated ? "Organization account required" : "Log in to use the shelter portal"} message={isAuthenticated ? "Only organization accounts can create and manage pet profiles." : undefined} />;
   else if (route.page === "photos") page = isOrganization ? (pet ? <PhotoManagerPage pet={pet} updatePetPhotos={updatePetPhotos} /> : <NotFound />) : <LoginRequired title={isAuthenticated ? "Organization account required" : "Log in to manage photos"} message={isAuthenticated ? "Only organization accounts can manage pet photos." : undefined} />;
   else page = <HomePage pets={pets} />;
 

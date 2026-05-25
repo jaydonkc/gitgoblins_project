@@ -1,52 +1,58 @@
 import mongoose from "mongoose";
 
+const inquiryStatuses = ["new", "contacted", "approved", "rejected"];
+
 const InquirySchema = new mongoose.Schema(
   {
     user: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-    pet: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Pet",
-      },
-    petId: {
-      type: String,
-      trim: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
     },
-    petName: {
-      type: String,
-      trim: true,
+    pet: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "Pet"
     },
     name: {
       type: String,
-      trim: true,
+      required() {
+        return !this.user;
+      },
+      trim: true
     },
     email: {
       type: String,
-      trim: true,
+      lowercase: true,
+      required() {
+        return !this.user;
+      },
+      trim: true
     },
     phone: {
       type: String,
-      trim: true,
+      required: true,
+      trim: true
     },
     housing: {
       type: String,
-      trim: true,
+      required: true,
+      trim: true
     },
     message: {
       type: String,
-      trim: true,
+      required: true,
+      trim: true
     },
     date: {
       type: Date,
       default: Date.now,
+      required: true
     },
     status: {
       type: String,
-      enum: ["new", "contacted", "approved", "rejected"],
+      enum: inquiryStatuses,
       default: "new"
-    },
+    }
   },
   {
     collection: "inquiries",

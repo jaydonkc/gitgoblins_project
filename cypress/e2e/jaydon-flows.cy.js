@@ -14,6 +14,48 @@ describe("Jaydon assigned pet adoption flows", () => {
     cy.clearLocalStorage();
   });
 
+  it("keeps anonymous browsing preferences and saved pets across refreshes", () => {
+    let selectedPetName = "";
+
+    cy.visit("/");
+    cy.get("[data-cy=session-id]").should("contain.text", "Session");
+    cy.window().its("localStorage").invoke("getItem", "gitgoblins:sessionId").should("be.a", "string");
+
+    cy.get("[data-cy=preference-species]").select("Dog").should("have.value", "Dog");
+    cy.reload();
+    cy.get("[data-cy=session-id]").should("contain.text", "restored");
+    cy.get("[data-cy=preference-species]").should("have.value", "Dog");
+
+    cy.get("[data-cy=pet-card]", { timeout: 10000 }).first().find("h3").then(($heading) => {
+      selectedPetName = $heading.text();
+    });
+    cy.get("[data-cy=pet-card]").first().find("[data-cy=pet-card-link]").click();
+    cy.then(() => {
+      cy.get("[data-cy=pet-profile-name]").should("contain.text", selectedPetName);
+    });
+    cy.get("[data-cy=save-pet]").click().should("contain.text", "Saved pet");
+
+    cy.reload();
+    cy.then(() => {
+      cy.get("[data-cy=pet-profile-name]").should("contain.text", selectedPetName);
+    });
+    cy.get("[data-cy=save-pet]").should("contain.text", "Saved pet");
+    cy.window().then((win) => {
+      const browsingState = JSON.parse(win.localStorage.getItem("gitgoblins:browsingState"));
+      expect(browsingState.page).to.equal("profile");
+      expect(browsingState.id).to.be.a("string").and.not.be.empty;
+    });
+
+    cy.visit("/#/favorites");
+    cy.then(() => {
+      cy.get("[data-cy=favorites-list]").should("contain.text", selectedPetName);
+    });
+    cy.reload();
+    cy.then(() => {
+      cy.get("[data-cy=favorites-list]").should("contain.text", selectedPetName);
+    });
+  });
+
   it("opens a pet profile from discovery and favorites, then submits an adoption inquiry", () => {
     const adopterName = `Jaydon Test ${Date.now()}`;
     const adopterUsername = `cypress-adopter-${Date.now()}`;
@@ -44,6 +86,9 @@ describe("Jaydon assigned pet adoption flows", () => {
     cy.then(() => {
       cy.get("[data-cy=pet-profile-name]").should("contain.text", selectedPetName);
     });
+
+    cy.get("[data-cy=submit-inquiry]").click();
+    cy.get("[data-cy=inquiry-validation]").should("contain.text", "Name is required.");
 
     cy.get("[data-cy=inquiry-name]").type(adopterName);
     cy.get("[data-cy=inquiry-email]").type("jaydon@example.com");
@@ -83,6 +128,10 @@ describe("Jaydon assigned pet adoption flows", () => {
       "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=1200&q=80";
 
     signUp(orgUsername, "organization");
+
+    cy.get("[data-cy=shelter-pets-empty]").should("contain.text", "No pet profiles");
+    cy.get("[data-cy=submit-pet]").click();
+    cy.get("[data-cy=pet-validation]").should("contain.text", "Pet name is required.");
 
     cy.get("[data-cy=pet-name]").type("Cypress Corgi");
     cy.get("[data-cy=pet-species]").select("Dog");

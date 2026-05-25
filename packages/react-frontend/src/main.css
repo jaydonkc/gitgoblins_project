@@ -160,7 +160,7 @@ img {
   display: inline-block;
   font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -395,6 +395,61 @@ textarea {
   padding: 12px;
 }
 
+.loading-state,
+.error-state {
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.loading-state {
+  background: rgba(49, 115, 143, 0.12);
+  border: 1px solid rgba(49, 115, 143, 0.24);
+  color: #28576c;
+  font-weight: 800;
+}
+
+.error-state {
+  background: #fff4ef;
+  border: 1px solid rgba(166, 75, 49, 0.28);
+  color: #8b3827;
+}
+
+.loading-state p,
+.error-state p,
+.error-state ul {
+  color: inherit;
+  margin-bottom: 0;
+}
+
+.error-state ul {
+  padding-left: 20px;
+}
+
+.preference-panel {
+  align-items: end;
+  background: white;
+  border: 1px solid rgba(38, 52, 47, 0.1);
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr);
+  margin-bottom: 20px;
+  padding: 16px;
+}
+
+.preference-panel p {
+  font-weight: 800;
+  margin-bottom: 0;
+}
+
+.preference-controls {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .api-banner.inline {
   border: 1px solid rgba(151, 96, 70, 0.22);
   border-radius: 8px;
@@ -478,8 +533,14 @@ textarea {
   border: 1px dashed rgba(38, 52, 47, 0.2);
   border-radius: 8px;
   color: rgba(38, 52, 47, 0.68);
+  display: grid;
+  gap: 12px;
   font-weight: 700;
   padding: 16px;
+}
+
+.empty-state .button {
+  justify-self: start;
 }
 
 .inquiry-list {
@@ -575,6 +636,11 @@ textarea {
   }
 
   .inquiry-details {
+    grid-template-columns: 1fr;
+  }
+
+  .preference-panel,
+  .preference-controls {
     grid-template-columns: 1fr;
   }
 }

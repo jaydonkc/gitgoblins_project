@@ -8,6 +8,7 @@
   "main": "backend.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint .",
     "dev": "npx nodemon backend.js",
     "start": "node backend.js"
   },

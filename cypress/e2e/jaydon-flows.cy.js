@@ -40,6 +40,24 @@ describe("Jaydon assigned pet adoption flows", () => {
     cy.get("[data-cy=submit-inquiry]").click();
 
     cy.get("[data-cy=inquiry-success]").should("contain.text", "Inquiry sent");
+
+    cy.visit("/#/shelter");
+    cy.get("[data-cy=inquiry-list]").should("contain.text", adopterName);
+    cy.contains("[data-cy=inquiry-item]", adopterName).within(() => {
+      cy.then(() => {
+        cy.contains(selectedPetName);
+      });
+      cy.contains("jaydon@example.com");
+      cy.contains("555-123-4567");
+      cy.contains("Apartment with landlord approval and a nearby park.");
+      cy.contains("I am interested in meeting this pet this week.");
+      cy.get("[data-cy=inquiry-status-select]").should("have.value", "new").select("contacted");
+    });
+    cy.get("[data-cy=inquiry-status-message]").should("contain.text", "marked contacted");
+    cy.reload();
+    cy.contains("[data-cy=inquiry-item]", adopterName).within(() => {
+      cy.get("[data-cy=inquiry-status-select]").should("have.value", "contacted");
+    });
   });
 
   it("creates a pet, manages multiple photos, and shows updates in discovery", () => {

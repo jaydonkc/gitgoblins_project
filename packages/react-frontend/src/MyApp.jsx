@@ -75,6 +75,8 @@ const emptyInquiry = {
   message: ""
 };
 
+const inquiryStatuses = ["new", "contacted", "approved", "rejected"];
+
 function readJson(key, fallback) {
   try {
     const stored = window.localStorage.getItem(key);
@@ -103,6 +105,20 @@ async function apiRequest(path, options = {}) {
 
   if (response.status === 204) return null;
   return response.json();
+}
+
+function normalizeInquiry(inquiry) {
+  return {
+    ...inquiry,
+    id: inquiry.id || inquiry._id,
+    petName: inquiry.pet?.name || inquiry.petName || "Unknown pet",
+    name: inquiry.user?.name || inquiry.name || "Unknown adopter",
+    email: inquiry.user?.email || inquiry.email || "No email provided",
+    phone: inquiry.phone || "No phone provided",
+    housing: inquiry.housing || "No housing information provided",
+    message: inquiry.message || "No message provided",
+    date: inquiry.date || inquiry.createdAt || ""
+  };
 }
 
 function normalizePet(pet) {
@@ -216,6 +232,17 @@ function Field({ label, children, hint }) {
       {hint ? <small>{hint}</small> : null}
     </label>
   );
+}
+
+function formatSubmittedDate(date) {
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) return "Unknown date";
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(parsedDate);
 }
 
 function HomePage({ pets }) {
@@ -425,9 +452,11 @@ function FavoritesPage({ pets, favoriteIds }) {
   );
 }
 
-function ShelterPage({ pets, addPet }) {
+function ShelterPage({ pets, inquiries, addPet, updateInquiryStatus }) {
   const [form, setForm] = useState(emptyPet);
   const [status, setStatus] = useState("");
+  const [inquiryStatusMessage, setInquiryStatusMessage] = useState("");
+  const [updatingInquiryId, setUpdatingInquiryId] = useState("");
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -471,6 +500,20 @@ function ShelterPage({ pets, addPet }) {
       setStatus(`${createdPet.name} was created and is now visible in the discovery feed.`);
     } catch {
       setStatus("Pet profile could not be saved. Check that the backend and MongoDB are running.");
+    }
+  }
+
+  async function changeInquiryStatus(inquiry, nextStatus) {
+    setInquiryStatusMessage(`Updating ${inquiry.petName} inquiry...`);
+    setUpdatingInquiryId(inquiry.id);
+
+    try {
+      await updateInquiryStatus(inquiry.id, nextStatus);
+      setInquiryStatusMessage(`${inquiry.petName} inquiry marked ${nextStatus}.`);
+    } catch {
+      setInquiryStatusMessage("Inquiry status could not be saved. Check that the backend is running.");
+    } finally {
+      setUpdatingInquiryId("");
     }
   }
 
@@ -527,6 +570,67 @@ function ShelterPage({ pets, addPet }) {
           ))}
         </div>
       </aside>
+      <section className="panel inquiry-panel">
+        <div className="section-heading compact">
+          <div>
+            <span className="eyebrow">Adopter follow-up</span>
+            <h2>Submitted inquiries</h2>
+          </div>
+          <p>{inquiries.length} total</p>
+        </div>
+        {inquiryStatusMessage ? (
+          <div className="success" data-cy="inquiry-status-message">{inquiryStatusMessage}</div>
+        ) : null}
+        {inquiries.length === 0 ? (
+          <div className="empty-state" data-cy="inquiries-empty">
+            No adoption inquiries have been submitted yet.
+          </div>
+        ) : (
+          <div className="inquiry-list" data-cy="inquiry-list">
+            {inquiries.map((inquiry) => (
+              <article className="inquiry-item" key={inquiry.id} data-cy="inquiry-item">
+                <div className="inquiry-heading">
+                  <div>
+                    <h3>{inquiry.petName}</h3>
+                    <p>{formatSubmittedDate(inquiry.date)}</p>
+                  </div>
+                  <label className="status-control">
+                    <span>Status</span>
+                    <select
+                      value={inquiry.status || "new"}
+                      onChange={(event) => changeInquiryStatus(inquiry, event.target.value)}
+                      disabled={updatingInquiryId === inquiry.id}
+                      data-cy="inquiry-status-select"
+                    >
+                      {inquiryStatuses.map((statusOption) => (
+                        <option key={statusOption} value={statusOption}>
+                          {statusOption}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="inquiry-details">
+                  <div>
+                    <span>Adopter</span>
+                    <strong>{inquiry.name}</strong>
+                    <a href={`mailto:${inquiry.email}`}>{inquiry.email}</a>
+                    <a href={`tel:${inquiry.phone}`}>{inquiry.phone}</a>
+                  </div>
+                  <div>
+                    <span>Housing</span>
+                    <p>{inquiry.housing}</p>
+                  </div>
+                  <div>
+                    <span>Message</span>
+                    <p>{inquiry.message}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
     </section>
   );
 }
@@ -607,6 +711,7 @@ function NotFound() {
 function MyApp() {
   const [route, setRoute] = useState(parseRoute);
   const [pets, setPets] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
   const [favorites, setFavorites] = useState(() => readJson(favoritesKey, []));
   const [apiStatus, setApiStatus] = useState("Loading pets from backend...");
 
@@ -655,6 +760,29 @@ function MyApp() {
     };
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadInquiries() {
+      try {
+        const backendInquiries = await apiRequest("/inquiries");
+
+        if (!ignore) {
+          setInquiries(backendInquiries.map(normalizeInquiry));
+        }
+      } catch {
+        if (!ignore) {
+          setInquiries([]);
+        }
+      }
+    }
+
+    loadInquiries();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   async function addPet(pet) {
     const createdPet = normalizePet(await apiRequest("/pets", {
       method: "POST",
@@ -665,10 +793,23 @@ function MyApp() {
   }
 
   async function addInquiry(inquiry) {
-    return apiRequest("/inquiries", {
+    const createdInquiry = normalizeInquiry(await apiRequest("/inquiries", {
       method: "POST",
       body: JSON.stringify(inquiry)
-    });
+    }));
+    setInquiries((current) => [createdInquiry, ...current]);
+    return createdInquiry;
+  }
+
+  async function updateInquiryStatus(id, status) {
+    const updatedInquiry = normalizeInquiry(await apiRequest(`/inquiries/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status })
+    }));
+    setInquiries((current) =>
+      current.map((inquiry) => (inquiry.id === id ? updatedInquiry : inquiry))
+    );
+    return updatedInquiry;
   }
 
   async function updatePetPhotos(id, imageUrls) {
@@ -685,7 +826,7 @@ function MyApp() {
   let page;
   if (route.page === "profile") page = pet ? <ProfilePage pet={pet} favorites={favorites} setFavorites={setFavorites} addInquiry={addInquiry} /> : <NotFound />;
   else if (route.page === "favorites") page = <FavoritesPage pets={pets} favoriteIds={favorites} />;
-  else if (route.page === "shelter") page = <ShelterPage pets={pets} addPet={addPet} />;
+  else if (route.page === "shelter") page = <ShelterPage pets={pets} inquiries={inquiries} addPet={addPet} updateInquiryStatus={updateInquiryStatus} />;
   else if (route.page === "photos") page = pet ? <PhotoManagerPage pet={pet} updatePetPhotos={updatePetPhotos} /> : <NotFound />;
   else page = <HomePage pets={pets} />;
 

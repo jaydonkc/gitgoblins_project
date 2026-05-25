@@ -24,7 +24,7 @@ function updateInquiryStatus(id, status) {
   return inquiryModel.findByIdAndUpdate(
     id,
     { status },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   ).populate(["pet", "user"]);
 }
 

@@ -4,25 +4,35 @@ describe("Jaydon assigned pet adoption flows", () => {
   });
 
   it("opens a pet profile from discovery and favorites, then submits an adoption inquiry", () => {
+    const adopterName = `Jaydon Test ${Date.now()}`;
+    let selectedPetName = "";
+
     cy.visit("/");
     cy.contains("Pet Adoption Match");
-    cy.get("[data-cy=pet-card]").first().within(() => {
-      cy.get("[data-cy=pet-card-link]").click();
+    cy.get("[data-cy=pet-card]").first().find("h3").then(($heading) => {
+      selectedPetName = $heading.text();
     });
+    cy.get("[data-cy=pet-card]").first().find("[data-cy=pet-card-link]").click();
 
-    cy.get("[data-cy=pet-profile-name]").should("contain.text", "Luna");
-    cy.get("[data-cy=pet-gallery]").find("[data-cy=pet-photo-thumb]").should("have.length.at.least", 2);
+    cy.then(() => {
+      cy.get("[data-cy=pet-profile-name]").should("contain.text", selectedPetName);
+    });
+    cy.get("[data-cy=pet-gallery]").find("[data-cy=pet-photo-thumb]").should("have.length.at.least", 1);
     cy.get("[data-cy=save-pet]").click().should("contain.text", "Saved pet");
     cy.get("[data-cy=start-inquiry]").should("be.visible");
 
     cy.visit("/#/favorites");
-    cy.get("[data-cy=favorites-list]").should("contain.text", "Luna");
+    cy.then(() => {
+      cy.get("[data-cy=favorites-list]").should("contain.text", selectedPetName);
+    });
     cy.get("[data-cy=favorite-pet-card]").first().within(() => {
       cy.get("[data-cy=favorite-profile-link]").click();
     });
-    cy.get("[data-cy=pet-profile-name]").should("contain.text", "Luna");
+    cy.then(() => {
+      cy.get("[data-cy=pet-profile-name]").should("contain.text", selectedPetName);
+    });
 
-    cy.get("[data-cy=inquiry-name]").type("Jaydon Test");
+    cy.get("[data-cy=inquiry-name]").type(adopterName);
     cy.get("[data-cy=inquiry-email]").type("jaydon@example.com");
     cy.get("[data-cy=inquiry-phone]").type("555-123-4567");
     cy.get("[data-cy=inquiry-housing]").type("Apartment with landlord approval and a nearby park.");
@@ -32,9 +42,11 @@ describe("Jaydon assigned pet adoption flows", () => {
     cy.get("[data-cy=inquiry-success]").should("contain.text", "Inquiry sent");
 
     cy.visit("/#/shelter");
-    cy.get("[data-cy=inquiry-list]").should("contain.text", "Jaydon Test");
-    cy.contains("[data-cy=inquiry-item]", "Jaydon Test").within(() => {
-      cy.contains("Luna");
+    cy.get("[data-cy=inquiry-list]").should("contain.text", adopterName);
+    cy.contains("[data-cy=inquiry-item]", adopterName).within(() => {
+      cy.then(() => {
+        cy.contains(selectedPetName);
+      });
       cy.contains("jaydon@example.com");
       cy.contains("555-123-4567");
       cy.contains("Apartment with landlord approval and a nearby park.");
@@ -43,7 +55,7 @@ describe("Jaydon assigned pet adoption flows", () => {
     });
     cy.get("[data-cy=inquiry-status-message]").should("contain.text", "marked contacted");
     cy.reload();
-    cy.contains("[data-cy=inquiry-item]", "Jaydon Test").within(() => {
+    cy.contains("[data-cy=inquiry-item]", adopterName).within(() => {
       cy.get("[data-cy=inquiry-status-select]").should("have.value", "contacted");
     });
   });

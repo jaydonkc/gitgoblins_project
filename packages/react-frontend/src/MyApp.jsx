@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import Login from "./Login.jsx";
 
 const favoritesKey = "gitgoblins:favorites";
+const authTokenKey = "gitgoblins:authToken";
+const authRoleKey = "gitgoblins:authRole";
+const authUsernameKey = "gitgoblins:authUsername";
+const INVALID_TOKEN = "INVALID_TOKEN";
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 const seedPets = [
@@ -90,13 +95,36 @@ function writeJson(key, value) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
-async function apiRequest(path, options = {}) {
+function readToken() {
+  return window.localStorage.getItem(authTokenKey) || INVALID_TOKEN;
+}
+
+function readRole() {
+  return window.localStorage.getItem(authRoleKey) || "";
+}
+
+function readUsername() {
+  return window.localStorage.getItem(authUsernameKey) || "";
+}
+
+function addAuthHeader(token, otherHeaders = {}) {
+  if (token === INVALID_TOKEN) {
+    return otherHeaders;
+  } else {
+    return {
+      ...otherHeaders,
+      Authorization: `Bearer ${token}`
+    };
+  }
+}
+
+async function apiRequest(path, options = {}, token = readToken()) {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...options,
-    headers: {
+    headers: addAuthHeader(token, {
       "Content-Type": "application/json",
       ...options.headers
-    }
+    })
   });
 
   if (!response.ok) {
@@ -149,6 +177,8 @@ function parseRoute() {
   const parts = hash.split("/").filter(Boolean);
   if (parts[0] === "pets" && parts[1]) return { page: "profile", id: parts[1] };
   if (parts[0] === "favorites") return { page: "favorites" };
+  if (parts[0] === "login") return { page: "login" };
+  if (parts[0] === "signup") return { page: "signup" };
   if (parts[0] === "shelter" && parts[1] === "pets" && parts[2] && parts[3] === "photos") {
     return { page: "photos", id: parts[2] };
   }
@@ -156,7 +186,7 @@ function parseRoute() {
   return { page: "home" };
 }
 
-function AppChrome({ children, apiStatus }) {
+function AppChrome({ children, apiStatus, isAuthenticated, isOrganization, onLogout }) {
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -167,7 +197,17 @@ function AppChrome({ children, apiStatus }) {
         <nav className="nav-links">
           <a href="#/">Browse</a>
           <a href="#/favorites">Favorites</a>
-          <a className="nav-primary" href="#/shelter">Shelter portal</a>
+          {isAuthenticated ? (
+            <>
+              {isOrganization ? <a className="nav-primary" href="#/shelter">Shelter portal</a> : null}
+              <button type="button" className="nav-button" onClick={onLogout}>Log out</button>
+            </>
+          ) : (
+            <>
+              <a href="#/login">Log in</a>
+              <a className="nav-primary" href="#/signup">Sign up</a>
+            </>
+          )}
         </nav>
       </header>
       {apiStatus ? <div className="api-banner">{apiStatus}</div> : null}
@@ -231,6 +271,48 @@ function Field({ label, children, hint }) {
       {children}
       {hint ? <small>{hint}</small> : null}
     </label>
+  );
+}
+
+function LoginPage({ mode, handleSubmit, message, isAuthenticated }) {
+  const isSignup = mode === "signup";
+
+  return (
+    <section className="auth-layout">
+      <div className="panel auth-panel">
+        <span className="eyebrow">{isSignup ? "Create account" : "Welcome back"}</span>
+        <h1>{isSignup ? "Sign up" : "Log in"}</h1>
+        {isAuthenticated ? <div className="success">You are authenticated.</div> : null}
+        {message ? <div className="api-banner inline">{message}</div> : null}
+        <Login
+          handleSubmit={handleSubmit}
+          buttonLabel={isSignup ? "Sign Up" : "Log In"}
+          showRoleChoice={isSignup}
+        />
+        <p className="muted">
+          {isSignup ? "Already have an account? " : "Need an account? "}
+          <a className="text-link" href={isSignup ? "#/login" : "#/signup"}>
+            {isSignup ? "Log in" : "Sign up"}
+          </a>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function LoginRequired({ title = "Login required", message = "Sign in before creating pet profiles, managing photos, or sending adoption inquiries." }) {
+  return (
+    <section className="section">
+      <div className="panel">
+        <span className="eyebrow">Protected page</span>
+        <h1>{title}</h1>
+        <p>{message}</p>
+        <div className="actions">
+          <a className="button primary" href="#/login">Log in</a>
+          <a className="button secondary" href="#/signup">Sign up</a>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -315,7 +397,7 @@ function HomePage({ pets }) {
   );
 }
 
-function ProfilePage({ pet, favorites, setFavorites, addInquiry }) {
+function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated }) {
   const [form, setForm] = useState(emptyInquiry);
   const [status, setStatus] = useState("");
   const saved = favorites.includes(pet.id);
@@ -332,6 +414,12 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry }) {
 
   async function submitInquiry(event) {
     event.preventDefault();
+
+    if (!isAuthenticated) {
+      setStatus("Please log in before submitting an adoption inquiry.");
+      return;
+    }
+
     setStatus("Sending inquiry...");
 
     try {
@@ -713,7 +801,13 @@ function MyApp() {
   const [pets, setPets] = useState([]);
   const [inquiries, setInquiries] = useState([]);
   const [favorites, setFavorites] = useState(() => readJson(favoritesKey, []));
+  const [token, setToken] = useState(readToken);
+  const [role, setRole] = useState(readRole);
+  const [username, setUsername] = useState(readUsername);
+  const [message, setMessage] = useState("");
   const [apiStatus, setApiStatus] = useState("Loading pets from backend...");
+  const isAuthenticated = token !== INVALID_TOKEN;
+  const isOrganization = role === "organization";
 
   useEffect(() => {
     const onHashChange = () => setRoute(parseRoute());
@@ -729,22 +823,12 @@ function MyApp() {
         let backendPets = await apiRequest("/pets");
 
         if (backendPets.length === 0) {
-          backendPets = await Promise.all(
-            seedPets.map((pet) =>
-              apiRequest("/pets", {
-                method: "POST",
-                body: JSON.stringify({
-                  ...pet,
-                  type: pet.species
-                })
-              })
-            )
-          );
+          backendPets = seedPets;
         }
 
         if (!ignore) {
           setPets(backendPets.map(normalizePet));
-          setApiStatus("");
+          setApiStatus(backendPets === seedPets ? "Showing starter pet data. Log in to create saved backend records." : "");
         }
       } catch {
         if (!ignore) {
@@ -760,12 +844,98 @@ function MyApp() {
     };
   }, []);
 
+  function saveAuth(payload, fallbackUsername) {
+    const nextRole = payload.role || "adopter";
+    const nextUsername = payload.username || fallbackUsername || "";
+
+    window.localStorage.setItem(authTokenKey, payload.token);
+    window.localStorage.setItem(authRoleKey, nextRole);
+    window.localStorage.setItem(authUsernameKey, nextUsername);
+    setToken(payload.token);
+    setRole(nextRole);
+    setUsername(nextUsername);
+  }
+
+  function logoutUser() {
+    window.localStorage.removeItem(authTokenKey);
+    window.localStorage.removeItem(authRoleKey);
+    window.localStorage.removeItem(authUsernameKey);
+    setToken(INVALID_TOKEN);
+    setRole("");
+    setUsername("");
+    setMessage("Logged out.");
+    window.location.hash = "#/";
+  }
+
+  function loginUser(creds) {
+    const promise = fetch(`${apiBaseUrl}/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(creds)
+    })
+      .then((response) => {
+        if (response.status === 200) {
+          response
+            .json()
+            .then((payload) => {
+              saveAuth(payload, creds.username);
+              window.location.hash = payload.role === "organization" ? "#/shelter" : "#/";
+            });
+          setMessage("Login successful; auth token saved");
+        } else {
+          setMessage(`Login Error ${response.status}: Unauthorized`);
+        }
+      })
+      .catch((error) => {
+        setMessage(`Login Error: ${error}`);
+      });
+
+    return promise;
+  }
+
+  function signupUser(creds) {
+    const promise = fetch(`${apiBaseUrl}/signup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(creds)
+    })
+      .then((response) => {
+        if (response.status === 201) {
+          response
+            .json()
+            .then((payload) => {
+              saveAuth(payload, creds.username);
+              window.location.hash = payload.role === "organization" ? "#/shelter" : "#/";
+            });
+          setMessage(`Signup successful for user: ${creds.username}; auth token saved`);
+        } else {
+          response.text().then((errorMessage) => {
+            setMessage(errorMessage || `Signup Error ${response.status}`);
+          });
+        }
+      })
+      .catch((error) => {
+        setMessage(`Signup Error: ${error}`);
+      });
+
+    return promise;
+  }
+
   useEffect(() => {
     let ignore = false;
 
     async function loadInquiries() {
+      if (!isOrganization) {
+        setInquiries([]);
+        return;
+      }
+
       try {
-        const backendInquiries = await apiRequest("/inquiries");
+        const backendInquiries = await apiRequest("/inquiries", {}, token);
 
         if (!ignore) {
           setInquiries(backendInquiries.map(normalizeInquiry));
@@ -781,13 +951,13 @@ function MyApp() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [isOrganization, token]);
 
   async function addPet(pet) {
     const createdPet = normalizePet(await apiRequest("/pets", {
       method: "POST",
       body: JSON.stringify(pet)
-    }));
+    }, token));
     setPets((current) => [createdPet, ...current]);
     return createdPet;
   }
@@ -796,7 +966,7 @@ function MyApp() {
     const createdInquiry = normalizeInquiry(await apiRequest("/inquiries", {
       method: "POST",
       body: JSON.stringify(inquiry)
-    }));
+    }, token));
     setInquiries((current) => [createdInquiry, ...current]);
     return createdInquiry;
   }
@@ -805,7 +975,7 @@ function MyApp() {
     const updatedInquiry = normalizeInquiry(await apiRequest(`/inquiries/${id}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status })
-    }));
+    }, token));
     setInquiries((current) =>
       current.map((inquiry) => (inquiry.id === id ? updatedInquiry : inquiry))
     );
@@ -816,7 +986,7 @@ function MyApp() {
     const updatedPet = normalizePet(await apiRequest(`/pets/${id}/photos`, {
       method: "PATCH",
       body: JSON.stringify({ imageUrls })
-    }));
+    }, token));
     setPets((current) => current.map((pet) => (pet.id === id ? updatedPet : pet)));
     return updatedPet;
   }
@@ -824,13 +994,15 @@ function MyApp() {
   const pet = useMemo(() => pets.find((item) => item.id === route.id), [pets, route.id]);
 
   let page;
-  if (route.page === "profile") page = pet ? <ProfilePage pet={pet} favorites={favorites} setFavorites={setFavorites} addInquiry={addInquiry} /> : <NotFound />;
+  if (route.page === "login") page = <LoginPage mode="login" handleSubmit={loginUser} message={message} isAuthenticated={isAuthenticated} />;
+  else if (route.page === "signup") page = <LoginPage mode="signup" handleSubmit={signupUser} message={message} isAuthenticated={isAuthenticated} />;
+  else if (route.page === "profile") page = pet ? <ProfilePage pet={pet} favorites={favorites} setFavorites={setFavorites} addInquiry={addInquiry} isAuthenticated={isAuthenticated} /> : <NotFound />;
   else if (route.page === "favorites") page = <FavoritesPage pets={pets} favoriteIds={favorites} />;
-  else if (route.page === "shelter") page = <ShelterPage pets={pets} inquiries={inquiries} addPet={addPet} updateInquiryStatus={updateInquiryStatus} />;
-  else if (route.page === "photos") page = pet ? <PhotoManagerPage pet={pet} updatePetPhotos={updatePetPhotos} /> : <NotFound />;
+  else if (route.page === "shelter") page = isOrganization ? <ShelterPage pets={pets.filter((item) => item.ownerUsername === username)} inquiries={inquiries} addPet={addPet} updateInquiryStatus={updateInquiryStatus} /> : <LoginRequired title={isAuthenticated ? "Organization account required" : "Log in to use the shelter portal"} message={isAuthenticated ? "Only organization accounts can create and manage pet profiles." : undefined} />;
+  else if (route.page === "photos") page = isOrganization ? (pet ? <PhotoManagerPage pet={pet} updatePetPhotos={updatePetPhotos} /> : <NotFound />) : <LoginRequired title={isAuthenticated ? "Organization account required" : "Log in to manage photos"} message={isAuthenticated ? "Only organization accounts can manage pet photos." : undefined} />;
   else page = <HomePage pets={pets} />;
 
-  return <AppChrome apiStatus={apiStatus}>{page}</AppChrome>;
+  return <AppChrome apiStatus={apiStatus} isAuthenticated={isAuthenticated} isOrganization={isOrganization} onLogout={logoutUser}>{page}</AppChrome>;
 }
 
 export default MyApp;

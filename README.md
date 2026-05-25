@@ -55,4 +55,81 @@ Backend/API deployment target: Express app in `packages/express-backend`, with M
 
 Live demo URL: pending until the Vercel project is connected and the first production deployment is published.
 
-If the backend pet collection is empty, the frontend seeds the starter pets through the Express API, so the records are stored in MongoDB before they are shown. The Express backend includes Mongo models and routes for pets, inquiries, organizations, users, and swipes.
+If the backend pet collection is empty, the frontend shows starter pet data locally. Organization accounts can create pet records through the Express API so they are stored in MongoDB. The Express backend includes Mongo models and routes for pets, inquiries, organizations, users, and swipes.
+
+Security Diagram:
+
+## Access Control Sequence Diagrams
+
+### Sign Up Flow
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant Frontend
+  participant Backend
+  participant MongoDB
+
+  User->>Frontend: Enter username, password, and account type
+  Frontend->>Backend: POST /signup with username, pwd, and role
+  Backend->>MongoDB: Check if username exists
+  MongoDB-->>Backend: Existing user or none
+  Backend->>Backend: Hash password with bcrypt
+  Backend->>MongoDB: Save username, hashedPassword, and role
+  Backend->>Backend: Generate JWT with username, role, and TOKEN_SECRET
+  Backend-->>Frontend: 201 Created with token and role
+  Frontend->>Frontend: Store token and role in localStorage
+```
+
+### Login Flow
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant Frontend
+  participant Backend
+  participant MongoDB
+
+  User->>Frontend: Enter username and password
+  Frontend->>Backend: POST /login with username and pwd
+  Backend->>MongoDB: Find user by username
+  MongoDB-->>Backend: User with hashedPassword
+  Backend->>Backend: Compare pwd with hashedPassword using bcrypt
+  Backend->>Backend: Generate JWT with username and role if password matches
+  Backend-->>Frontend: 200 OK with token and role
+  Frontend->>Frontend: Store token and role in localStorage
+```
+
+### Protected API Request Flow
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant Frontend
+  participant Backend
+  participant AuthMiddleware
+  participant RoleMiddleware
+  participant MongoDB
+
+  User->>Frontend: Submit protected action
+  Frontend->>Backend: Request with Authorization: Bearer token
+  Backend->>AuthMiddleware: authenticateUser(req, res, next)
+  AuthMiddleware->>AuthMiddleware: Verify JWT with TOKEN_SECRET
+
+  alt Valid token
+    AuthMiddleware->>Backend: next()
+    opt Organization-only route
+      Backend->>RoleMiddleware: requireOrganization(req, res, next)
+      RoleMiddleware->>RoleMiddleware: Check JWT role is organization
+    end
+    alt Authorized role
+      Backend->>MongoDB: Read or modify protected data owned by this user/org
+      MongoDB-->>Backend: Result
+      Backend-->>Frontend: Success response
+    else Wrong role or wrong owner
+      RoleMiddleware-->>Frontend: 403 Forbidden
+    end
+  else Missing or invalid token
+    AuthMiddleware-->>Frontend: 401 Unauthorized
+  end
+```

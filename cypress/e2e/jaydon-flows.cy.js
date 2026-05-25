@@ -1,3 +1,14 @@
+const testPassword = "TestPassword123!";
+
+function signUp(username, role) {
+  cy.visit("/#/signup");
+  cy.get("#username").type(username);
+  cy.get("#password").type(testPassword);
+  cy.get("#role").select(role);
+  cy.contains("button", "Sign Up").click();
+  cy.location("hash").should("eq", role === "organization" ? "#/shelter" : "#/");
+}
+
 describe("Jaydon assigned pet adoption flows", () => {
   beforeEach(() => {
     cy.clearLocalStorage();
@@ -5,9 +16,11 @@ describe("Jaydon assigned pet adoption flows", () => {
 
   it("opens a pet profile from discovery and favorites, then submits an adoption inquiry", () => {
     const adopterName = `Jaydon Test ${Date.now()}`;
+    const adopterUsername = `cypress-adopter-${Date.now()}`;
+    const shelterUsername = `cypress-reviewer-${Date.now()}`;
     let selectedPetName = "";
 
-    cy.visit("/");
+    signUp(adopterUsername, "adopter");
     cy.contains("Pet Adoption Match");
     cy.get("[data-cy=pet-card]").first().find("h3").then(($heading) => {
       selectedPetName = $heading.text();
@@ -41,7 +54,7 @@ describe("Jaydon assigned pet adoption flows", () => {
 
     cy.get("[data-cy=inquiry-success]").should("contain.text", "Inquiry sent");
 
-    cy.visit("/#/shelter");
+    signUp(shelterUsername, "organization");
     cy.get("[data-cy=inquiry-list]").should("contain.text", adopterName);
     cy.contains("[data-cy=inquiry-item]", adopterName).within(() => {
       cy.then(() => {
@@ -61,6 +74,7 @@ describe("Jaydon assigned pet adoption flows", () => {
   });
 
   it("creates a pet, manages multiple photos, and shows updates in discovery", () => {
+    const orgUsername = `cypress-org-${Date.now()}`;
     const originalPhoto =
       "https://images.unsplash.com/photo-1583511655826-05700d52f4d9?auto=format&fit=crop&w=1200&q=80";
     const secondPhoto =
@@ -68,7 +82,7 @@ describe("Jaydon assigned pet adoption flows", () => {
     const replacementPhoto =
       "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=1200&q=80";
 
-    cy.visit("/#/shelter");
+    signUp(orgUsername, "organization");
 
     cy.get("[data-cy=pet-name]").type("Cypress Corgi");
     cy.get("[data-cy=pet-species]").select("Dog");

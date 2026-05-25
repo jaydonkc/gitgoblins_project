@@ -3,10 +3,11 @@
 import express from "express";
 const router = express.Router();
 import userService from "../services/user-service.js";
+import { authenticateUser } from "../auth.js";
 
 const { addUser, getUsers, findUserById, removeUser } = userService;
 
-router.get("/", (req, res) => {
+router.get("/", authenticateUser, (req, res) => {
   const name = req.query.name;
   const email = req.query.email;
 
@@ -19,7 +20,7 @@ router.get("/", (req, res) => {
     });
 });
 
-router.post("/", (req, res) => {
+router.post("/", authenticateUser, (req, res) => {
   const userToAdd = req.body;
 
   if (
@@ -41,7 +42,7 @@ router.post("/", (req, res) => {
   }
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/:id", authenticateUser, (req, res) => {
   const id = req.params["id"];
 
   removeUser(id)
@@ -54,7 +55,7 @@ router.delete("/:id", (req, res) => {
     });
 });
 
-router.get("/:id", (req, res) => {
+router.get("/:id", authenticateUser, (req, res) => {
   const id = req.params["id"]; //or req.params.id
 
   findUserById(id)

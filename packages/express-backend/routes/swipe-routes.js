@@ -3,10 +3,11 @@
 import express from "express";
 const router = express.Router();
 import swipeService from "../services/swipe-service.js";
+import { authenticateUser } from "../auth.js";
 
 const { addSwipe, getSwipes, findSwipeById, removeSwipe } = swipeService;
 
-router.get("/", (req, res) => {
+router.get("/", authenticateUser, (req, res) => {
 
   getSwipes()
     .then((swipes) => {
@@ -17,7 +18,7 @@ router.get("/", (req, res) => {
     });
 });
 
-router.post("/", (req, res) => {
+router.post("/", authenticateUser, (req, res) => {
   const swipeToAdd = req.body;
 
   if (
@@ -41,7 +42,7 @@ router.post("/", (req, res) => {
   }
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/:id", authenticateUser, (req, res) => {
   const id = req.params["id"];
 
   removeSwipe(id)
@@ -54,7 +55,7 @@ router.delete("/:id", (req, res) => {
     });
 });
 
-router.get("/:id", (req, res) => {
+router.get("/:id", authenticateUser, (req, res) => {
   const id = req.params["id"]; //or req.params.id
 
   findSwipeById(id)

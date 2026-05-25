@@ -55,7 +55,6 @@ export function registerUser(req, res) {
           )
           .then(() => generateAccessToken(username, normalizedRole))
           .then((token) => {
-            console.log("Token:", token);
             res.status(201).send({ token: token, role: normalizedRole, username });
           });
       })

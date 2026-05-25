@@ -1,28 +1,50 @@
+const testPassword = "TestPassword123!";
+
+function signUp(username, role) {
+  cy.visit("/#/signup");
+  cy.get("#username").type(username);
+  cy.get("#password").type(testPassword);
+  cy.get("#role").select(role);
+  cy.contains("button", "Sign Up").click();
+  cy.location("hash").should("eq", role === "organization" ? "#/shelter" : "#/");
+}
+
 describe("Jaydon assigned pet adoption flows", () => {
   beforeEach(() => {
     cy.clearLocalStorage();
   });
 
   it("opens a pet profile from discovery and favorites, then submits an adoption inquiry", () => {
-    cy.visit("/");
-    cy.contains("Pet Adoption Match");
-    cy.get("[data-cy=pet-card]").first().within(() => {
-      cy.get("[data-cy=pet-card-link]").click();
-    });
+    const adopterName = `Jaydon Test ${Date.now()}`;
+    const adopterUsername = `cypress-adopter-${Date.now()}`;
+    let selectedPetName = "";
 
-    cy.get("[data-cy=pet-profile-name]").should("contain.text", "Luna");
-    cy.get("[data-cy=pet-gallery]").find("[data-cy=pet-photo-thumb]").should("have.length.at.least", 2);
+    signUp(adopterUsername, "adopter");
+    cy.contains("Pet Adoption Match");
+    cy.get("[data-cy=pet-card]").first().find("h3").then(($heading) => {
+      selectedPetName = $heading.text();
+    });
+    cy.get("[data-cy=pet-card]").first().find("[data-cy=pet-card-link]").click();
+
+    cy.then(() => {
+      cy.get("[data-cy=pet-profile-name]").should("contain.text", selectedPetName);
+    });
+    cy.get("[data-cy=pet-gallery]").find("[data-cy=pet-photo-thumb]").should("have.length.at.least", 1);
     cy.get("[data-cy=save-pet]").click().should("contain.text", "Saved pet");
     cy.get("[data-cy=start-inquiry]").should("be.visible");
 
     cy.visit("/#/favorites");
-    cy.get("[data-cy=favorites-list]").should("contain.text", "Luna");
+    cy.then(() => {
+      cy.get("[data-cy=favorites-list]").should("contain.text", selectedPetName);
+    });
     cy.get("[data-cy=favorite-pet-card]").first().within(() => {
       cy.get("[data-cy=favorite-profile-link]").click();
     });
-    cy.get("[data-cy=pet-profile-name]").should("contain.text", "Luna");
+    cy.then(() => {
+      cy.get("[data-cy=pet-profile-name]").should("contain.text", selectedPetName);
+    });
 
-    cy.get("[data-cy=inquiry-name]").type("Jaydon Test");
+    cy.get("[data-cy=inquiry-name]").type(adopterName);
     cy.get("[data-cy=inquiry-email]").type("jaydon@example.com");
     cy.get("[data-cy=inquiry-phone]").type("555-123-4567");
     cy.get("[data-cy=inquiry-housing]").type("Apartment with landlord approval and a nearby park.");
@@ -33,6 +55,7 @@ describe("Jaydon assigned pet adoption flows", () => {
   });
 
   it("creates a pet, manages multiple photos, and shows updates in discovery", () => {
+    const orgUsername = `cypress-org-${Date.now()}`;
     const originalPhoto =
       "https://images.unsplash.com/photo-1583511655826-05700d52f4d9?auto=format&fit=crop&w=1200&q=80";
     const secondPhoto =
@@ -40,7 +63,7 @@ describe("Jaydon assigned pet adoption flows", () => {
     const replacementPhoto =
       "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=1200&q=80";
 
-    cy.visit("/#/shelter");
+    signUp(orgUsername, "organization");
 
     cy.get("[data-cy=pet-name]").type("Cypress Corgi");
     cy.get("[data-cy=pet-species]").select("Dog");

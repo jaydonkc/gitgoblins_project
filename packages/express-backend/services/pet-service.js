@@ -26,7 +26,7 @@ function updatePetAvailability(id, availability) {
   return petModel.findByIdAndUpdate(
     id,
     { availability },
-    { new: true }
+    { returnDocument: "after" }
   );
 }
 
@@ -34,7 +34,7 @@ function updatePetAvailabilityForOwner(id, availability, ownerUsername) {
   return petModel.findOneAndUpdate(
     { _id: id, ownerUsername },
     { availability },
-    { new: true }
+    { returnDocument: "after" }
   );
 }
 
@@ -42,7 +42,7 @@ function updatePetPhotos(id, imageUrls) {
   return petModel.findByIdAndUpdate(
     id,
     { imageUrls },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 }
 
@@ -50,7 +50,7 @@ function updatePetPhotosForOwner(id, imageUrls, ownerUsername) {
   return petModel.findOneAndUpdate(
     { _id: id, ownerUsername },
     { imageUrls },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 }
 

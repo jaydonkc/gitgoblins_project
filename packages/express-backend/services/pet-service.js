@@ -22,7 +22,7 @@ function updatePetAvailability(id, availability) {
   return petModel.findByIdAndUpdate(
     id,
     { availability },
-    { new: true }
+    { returnDocument: "after" }
   );
 }
 
@@ -30,7 +30,7 @@ function updatePetPhotos(id, imageUrls) {
   return petModel.findByIdAndUpdate(
     id,
     { imageUrls },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 }
 

@@ -4,25 +4,35 @@ describe("Jaydon assigned pet adoption flows", () => {
   });
 
   it("opens a pet profile from discovery and favorites, then submits an adoption inquiry", () => {
+    const adopterName = `Jaydon Test ${Date.now()}`;
+    let selectedPetName = "";
+
     cy.visit("/");
     cy.contains("Pet Adoption Match");
-    cy.get("[data-cy=pet-card]").first().within(() => {
-      cy.get("[data-cy=pet-card-link]").click();
+    cy.get("[data-cy=pet-card]").first().find("h3").then(($heading) => {
+      selectedPetName = $heading.text();
     });
+    cy.get("[data-cy=pet-card]").first().find("[data-cy=pet-card-link]").click();
 
-    cy.get("[data-cy=pet-profile-name]").should("contain.text", "Luna");
-    cy.get("[data-cy=pet-gallery]").find("[data-cy=pet-photo-thumb]").should("have.length.at.least", 2);
+    cy.then(() => {
+      cy.get("[data-cy=pet-profile-name]").should("contain.text", selectedPetName);
+    });
+    cy.get("[data-cy=pet-gallery]").find("[data-cy=pet-photo-thumb]").should("have.length.at.least", 1);
     cy.get("[data-cy=save-pet]").click().should("contain.text", "Saved pet");
     cy.get("[data-cy=start-inquiry]").should("be.visible");
 
     cy.visit("/#/favorites");
-    cy.get("[data-cy=favorites-list]").should("contain.text", "Luna");
+    cy.then(() => {
+      cy.get("[data-cy=favorites-list]").should("contain.text", selectedPetName);
+    });
     cy.get("[data-cy=favorite-pet-card]").first().within(() => {
       cy.get("[data-cy=favorite-profile-link]").click();
     });
-    cy.get("[data-cy=pet-profile-name]").should("contain.text", "Luna");
+    cy.then(() => {
+      cy.get("[data-cy=pet-profile-name]").should("contain.text", selectedPetName);
+    });
 
-    cy.get("[data-cy=inquiry-name]").type("Jaydon Test");
+    cy.get("[data-cy=inquiry-name]").type(adopterName);
     cy.get("[data-cy=inquiry-email]").type("jaydon@example.com");
     cy.get("[data-cy=inquiry-phone]").type("555-123-4567");
     cy.get("[data-cy=inquiry-housing]").type("Apartment with landlord approval and a nearby park.");

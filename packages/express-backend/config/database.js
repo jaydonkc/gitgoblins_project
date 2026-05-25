@@ -6,11 +6,11 @@ import { fileURLToPath } from "node:url";
 
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
-mongoose.set("debug", true);
-
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(configDir, "../../../.env") });
 dotenv.config({ path: path.resolve(configDir, "../.env") });
+
+mongoose.set("debug", process.env.MONGOOSE_DEBUG === "true");
 
 function getMongoURI(dbname) {
   // Pull the single connection string from the environment

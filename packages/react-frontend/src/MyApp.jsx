@@ -2,11 +2,20 @@ import { useEffect, useMemo, useState } from "react";
 import Login from "./Login.jsx";
 
 const favoritesKey = "gitgoblins:favorites";
+const sessionIdKey = "gitgoblins:sessionId";
+const preferencesKey = "gitgoblins:preferences";
+const browsingStateKey = "gitgoblins:browsingState";
 const authTokenKey = "gitgoblins:authToken";
 const authRoleKey = "gitgoblins:authRole";
 const authUsernameKey = "gitgoblins:authUsername";
 const INVALID_TOKEN = "INVALID_TOKEN";
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+const defaultPreferences = {
+  species: "all",
+  size: "all",
+  energyLevel: "all"
+};
 
 const seedPets = [
   {
@@ -92,7 +101,47 @@ function readJson(key, fallback) {
 }
 
 function writeJson(key, value) {
-  window.localStorage.setItem(key, JSON.stringify(value));
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Best-effort persistence; the UI falls back to in-memory state.
+  }
+}
+
+function createSessionId() {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  return `session-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function readSession() {
+  try {
+    const existingSessionId = window.localStorage.getItem(sessionIdKey);
+
+    if (existingSessionId) {
+      return { id: existingSessionId, restored: true, persistent: true };
+    }
+
+    const nextSessionId = createSessionId();
+    window.localStorage.setItem(sessionIdKey, nextSessionId);
+    return { id: nextSessionId, restored: false, persistent: true };
+  } catch {
+    return { id: "temporary-session", restored: false, persistent: false };
+  }
+}
+
+function readPreferences() {
+  return {
+    ...defaultPreferences,
+    ...readJson(preferencesKey, defaultPreferences)
+  };
+}
+
+function isBlank(value) {
+  return String(value || "").trim() === "";
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
 }
 
 function readToken() {
@@ -274,6 +323,28 @@ function Field({ label, children, hint }) {
   );
 }
 
+function StatusNotice({ type = "success", children, ...props }) {
+  const className = type === "error" ? "error-state" : type === "loading" ? "loading-state" : "success";
+  return (
+    <div className={className} {...props}>
+      {children}
+    </div>
+  );
+}
+
+function ValidationList({ errors, id }) {
+  if (!errors.length) return null;
+
+  return (
+    <div className="error-state" data-cy={id}>
+      <strong>Please fix the following:</strong>
+      <ul>
+        {errors.map((error) => <li key={error}>{error}</li>)}
+      </ul>
+    </div>
+  );
+}
+
 function LoginPage({ mode, handleSubmit, message, isAuthenticated }) {
   const isSignup = mode === "signup";
 
@@ -316,6 +387,21 @@ function LoginRequired({ title = "Login required", message = "Sign in before cre
   );
 }
 
+function DataStatePage({ type = "loading", message, onRetry, dataCy }) {
+  return (
+    <section className="section">
+      <StatusNotice type={type} data-cy={dataCy}>
+        <p>{message}</p>
+        {onRetry ? (
+          <button type="button" className="button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+      </StatusNotice>
+    </section>
+  );
+}
+
 function formatSubmittedDate(date) {
   const parsedDate = new Date(date);
 
@@ -327,9 +413,33 @@ function formatSubmittedDate(date) {
   }).format(parsedDate);
 }
 
-function HomePage({ pets }) {
-  const visiblePets = pets.filter((pet) => pet.availability !== "adopted");
+function HomePage({
+  pets,
+  preferences,
+  setPreferences,
+  loadState,
+  loadError,
+  retryLoadPets,
+  sessionInfo
+}) {
+  const availablePets = pets.filter((pet) => pet.availability !== "adopted");
+  const visiblePets = availablePets.filter((pet) =>
+    (preferences.species === "all" || pet.species === preferences.species) &&
+    (preferences.size === "all" || pet.size === preferences.size) &&
+    (preferences.energyLevel === "all" || pet.energyLevel === preferences.energyLevel)
+  );
   const featured = visiblePets[0];
+  const sessionLabel = sessionInfo.persistent
+    ? `Session ${sessionInfo.id.slice(-6)} ${sessionInfo.restored ? "restored" : "started"}`
+    : "Temporary session";
+
+  function updatePreference(field, value) {
+    setPreferences((current) => ({ ...current, [field]: value }));
+  }
+
+  function clearPreferences() {
+    setPreferences(defaultPreferences);
+  }
 
   return (
     <>
@@ -371,27 +481,77 @@ function HomePage({ pets }) {
           </div>
           <p>{visiblePets.length} pets ready to meet adopters</p>
         </div>
-        <div className="pet-grid">
-          {visiblePets.map((pet) => (
-            <article className="pet-card" key={pet.id} data-cy="pet-card">
-              <Photo src={pet.imageUrls[0]} alt={`${pet.name}, ${pet.breed}`} />
-              <div className="card-body">
-                <div className="card-title">
-                  <div>
-                    <h3>{pet.name}</h3>
-                    <p>{pet.breed} - {pet.age}</p>
-                  </div>
-                  <span className="pill">{pet.availability}</span>
-                </div>
-                <p>{pet.description}</p>
-                <p className="muted">{pet.location}</p>
-                <a className="button dark" href={`#/pets/${pet.id}`} data-cy="pet-card-link">
-                  View profile
-                </a>
-              </div>
-            </article>
-          ))}
+
+        <div className="preference-panel">
+          <div>
+            <span className="eyebrow">Saved preferences</span>
+            <p data-cy="session-id">{sessionLabel}</p>
+          </div>
+          <div className="preference-controls">
+            <Field label="Species">
+              <select value={preferences.species} onChange={(event) => updatePreference("species", event.target.value)} data-cy="preference-species">
+                <option value="all">All species</option>
+                <option value="Dog">Dog</option>
+                <option value="Cat">Cat</option>
+                <option value="Other">Other</option>
+              </select>
+            </Field>
+            <Field label="Size">
+              <select value={preferences.size} onChange={(event) => updatePreference("size", event.target.value)} data-cy="preference-size">
+                <option value="all">All sizes</option>
+                <option value="Small">Small</option>
+                <option value="Medium">Medium</option>
+                <option value="Large">Large</option>
+              </select>
+            </Field>
+            <Field label="Energy">
+              <select value={preferences.energyLevel} onChange={(event) => updatePreference("energyLevel", event.target.value)} data-cy="preference-energy">
+                <option value="all">All energy levels</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
+            </Field>
+          </div>
         </div>
+
+        {loadState === "loading" ? (
+          <StatusNotice type="loading" data-cy="feed-loading">Loading adoptable pets...</StatusNotice>
+        ) : loadState === "error" ? (
+          <StatusNotice type="error" data-cy="feed-error">
+            <p>{loadError}</p>
+            <button type="button" className="button secondary" onClick={retryLoadPets} data-cy="retry-load-pets">Retry</button>
+          </StatusNotice>
+        ) : visiblePets.length === 0 ? (
+          <div className="empty-state" data-cy="feed-empty">
+            {availablePets.length === 0 ? "No adoptable pets are available yet." : "No pets match your saved preferences."}
+            {availablePets.length > 0 ? (
+              <button type="button" className="button secondary" onClick={clearPreferences} data-cy="clear-preferences">Clear filters</button>
+            ) : null}
+          </div>
+        ) : (
+          <div className="pet-grid">
+            {visiblePets.map((pet) => (
+              <article className="pet-card" key={pet.id} data-cy="pet-card">
+                <Photo src={pet.imageUrls[0]} alt={`${pet.name}, ${pet.breed}`} />
+                <div className="card-body">
+                  <div className="card-title">
+                    <div>
+                      <h3>{pet.name}</h3>
+                      <p>{pet.breed} - {pet.age}</p>
+                    </div>
+                    <span className="pill">{pet.availability}</span>
+                  </div>
+                  <p>{pet.description}</p>
+                  <p className="muted">{pet.location}</p>
+                  <a className="button dark" href={`#/pets/${pet.id}`} data-cy="pet-card-link">
+                    View profile
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </>
   );
@@ -400,10 +560,13 @@ function HomePage({ pets }) {
 function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated }) {
   const [form, setForm] = useState(emptyInquiry);
   const [status, setStatus] = useState("");
+  const [statusType, setStatusType] = useState("success");
+  const [validationErrors, setValidationErrors] = useState([]);
   const saved = favorites.includes(pet.id);
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
+    setValidationErrors([]);
   }
 
   function toggleFavorite() {
@@ -414,13 +577,29 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated
 
   async function submitInquiry(event) {
     event.preventDefault();
+    const nextErrors = [];
+
+    if (isBlank(form.name)) nextErrors.push("Name is required.");
+    if (isBlank(form.email)) nextErrors.push("Email is required.");
+    else if (!isValidEmail(form.email)) nextErrors.push("Enter a valid email address.");
+    if (isBlank(form.phone)) nextErrors.push("Phone is required.");
+    if (isBlank(form.housing)) nextErrors.push("Housing information is required.");
+    if (isBlank(form.message)) nextErrors.push("Message is required.");
+
+    if (nextErrors.length) {
+      setValidationErrors(nextErrors);
+      setStatus("");
+      return;
+    }
 
     if (!isAuthenticated) {
       setStatus("Please log in before submitting an adoption inquiry.");
+      setStatusType("error");
       return;
     }
 
     setStatus("Sending inquiry...");
+    setStatusType("loading");
 
     try {
       await addInquiry({
@@ -432,8 +611,10 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated
       });
       setForm(emptyInquiry);
       setStatus(`Inquiry sent for ${pet.name}. Shelter notification logged for the MVP.`);
+      setStatusType("success");
     } catch {
       setStatus("Inquiry could not be saved. Check that the backend and MongoDB are running.");
+      setStatusType("error");
     }
   }
 
@@ -481,8 +662,9 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated
           <a className="button dark" href="#inquiry-form" data-cy="start-inquiry">Start inquiry</a>
           <h2>I am interested</h2>
           <p>Send your contact and housing information so the shelter can evaluate fit.</p>
-          {status ? <div className="success" data-cy="inquiry-success">{status}</div> : null}
-          <form id="inquiry-form" className="form-grid" onSubmit={submitInquiry} data-cy="inquiry-form">
+          {status ? <StatusNotice type={statusType} data-cy="inquiry-success">{status}</StatusNotice> : null}
+          <ValidationList errors={validationErrors} id="inquiry-validation" />
+          <form id="inquiry-form" className="form-grid" onSubmit={submitInquiry} data-cy="inquiry-form" noValidate>
             <Field label="Name">
               <input required value={form.name} onChange={(event) => updateField("name", event.target.value)} data-cy="inquiry-name" />
             </Field>
@@ -506,8 +688,9 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated
   );
 }
 
-function FavoritesPage({ pets, favoriteIds }) {
+function FavoritesPage({ pets, favoriteIds, loadState, loadError, retryLoadPets }) {
   const favorites = pets.filter((pet) => favoriteIds.includes(pet.id));
+  const hasSavedPets = favoriteIds.length > 0;
 
   return (
     <section className="section">
@@ -518,7 +701,14 @@ function FavoritesPage({ pets, favoriteIds }) {
         </div>
         <a className="button secondary" href="#/">Browse more pets</a>
       </div>
-      {favorites.length === 0 ? (
+      {hasSavedPets && loadState === "loading" ? (
+        <StatusNotice type="loading" data-cy="favorites-loading">Loading saved pets...</StatusNotice>
+      ) : hasSavedPets && loadState === "error" ? (
+        <StatusNotice type="error" data-cy="favorites-error">
+          <p>{loadError}</p>
+          <button type="button" className="button secondary" onClick={retryLoadPets}>Retry</button>
+        </StatusNotice>
+      ) : favorites.length === 0 ? (
         <div className="panel" data-cy="favorites-empty">No saved pets yet.</div>
       ) : (
         <div className="pet-grid" data-cy="favorites-list">
@@ -540,14 +730,26 @@ function FavoritesPage({ pets, favoriteIds }) {
   );
 }
 
-function ShelterPage({ pets, inquiries, addPet, updateInquiryStatus }) {
+function ShelterPage({
+  pets,
+  inquiries,
+  inquiriesLoadState,
+  inquiriesError,
+  retryInquiries,
+  addPet,
+  updateInquiryStatus
+}) {
   const [form, setForm] = useState(emptyPet);
   const [status, setStatus] = useState("");
+  const [statusType, setStatusType] = useState("success");
+  const [validationErrors, setValidationErrors] = useState([]);
   const [inquiryStatusMessage, setInquiryStatusMessage] = useState("");
+  const [inquiryStatusType, setInquiryStatusType] = useState("success");
   const [updatingInquiryId, setUpdatingInquiryId] = useState("");
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
+    setValidationErrors([]);
   }
 
   function updateImage(index, value) {
@@ -571,6 +773,23 @@ function ShelterPage({ pets, inquiries, addPet, updateInquiryStatus }) {
 
   async function submitPet(event) {
     event.preventDefault();
+    const nextErrors = [];
+
+    if (isBlank(form.name)) nextErrors.push("Pet name is required.");
+    if (isBlank(form.breed)) nextErrors.push("Breed is required.");
+    if (isBlank(form.age)) nextErrors.push("Age is required.");
+    if (isBlank(form.location)) nextErrors.push("Location is required.");
+    if (isBlank(form.shelterName)) nextErrors.push("Shelter name is required.");
+    if (isBlank(form.shelterEmail)) nextErrors.push("Shelter email is required.");
+    else if (!isValidEmail(form.shelterEmail)) nextErrors.push("Enter a valid shelter email address.");
+    if (isBlank(form.description)) nextErrors.push("Description is required.");
+
+    if (nextErrors.length) {
+      setValidationErrors(nextErrors);
+      setStatus("");
+      return;
+    }
+
     const pet = {
       ...form,
       type: form.species,
@@ -581,25 +800,31 @@ function ShelterPage({ pets, inquiries, addPet, updateInquiryStatus }) {
     };
 
     setStatus("Saving pet profile...");
+    setStatusType("loading");
 
     try {
       const createdPet = await addPet(pet);
       setForm(emptyPet);
       setStatus(`${createdPet.name} was created and is now visible in the discovery feed.`);
+      setStatusType("success");
     } catch {
       setStatus("Pet profile could not be saved. Check that the backend and MongoDB are running.");
+      setStatusType("error");
     }
   }
 
   async function changeInquiryStatus(inquiry, nextStatus) {
     setInquiryStatusMessage(`Updating ${inquiry.petName} inquiry...`);
+    setInquiryStatusType("loading");
     setUpdatingInquiryId(inquiry.id);
 
     try {
       await updateInquiryStatus(inquiry.id, nextStatus);
       setInquiryStatusMessage(`${inquiry.petName} inquiry marked ${nextStatus}.`);
+      setInquiryStatusType("success");
     } catch {
       setInquiryStatusMessage("Inquiry status could not be saved. Check that the backend is running.");
+      setInquiryStatusType("error");
     } finally {
       setUpdatingInquiryId("");
     }
@@ -611,8 +836,9 @@ function ShelterPage({ pets, inquiries, addPet, updateInquiryStatus }) {
         <span className="eyebrow">Shelter portal</span>
         <h1>Create a pet profile</h1>
         <p>Add the details adopters need to evaluate fit. Multiple photos are supported through image URLs for the MVP.</p>
-        {status ? <div className="success" data-cy="pet-create-success">{status}</div> : null}
-        <form className="form-grid" onSubmit={submitPet} data-cy="pet-create-form">
+        {status ? <StatusNotice type={statusType} data-cy="pet-create-success">{status}</StatusNotice> : null}
+        <ValidationList errors={validationErrors} id="pet-validation" />
+        <form className="form-grid" onSubmit={submitPet} data-cy="pet-create-form" noValidate>
           <div className="two-col">
             <Field label="Pet name"><input required value={form.name} onChange={(event) => updateField("name", event.target.value)} data-cy="pet-name" /></Field>
             <Field label="Species"><select value={form.species} onChange={(event) => updateField("species", event.target.value)} data-cy="pet-species"><option>Dog</option><option>Cat</option><option>Other</option></select></Field>
@@ -646,16 +872,20 @@ function ShelterPage({ pets, inquiries, addPet, updateInquiryStatus }) {
       <aside className="panel">
         <h2>Current pet profiles</h2>
         <div className="profile-list" data-cy="shelter-pet-list">
-          {pets.map((pet) => (
-            <article key={pet.id} data-cy="shelter-pet-item">
-              <strong>{pet.name}</strong>
-              <span>{pet.breed} - {pet.imageUrls.length} photo{pet.imageUrls.length === 1 ? "" : "s"}</span>
-              <div className="mini-actions">
-                <a href={`#/pets/${pet.id}`}>View profile</a>
-                <a href={`#/shelter/pets/${pet.id}/photos`} data-cy="manage-photos-link">Manage photos</a>
-              </div>
-            </article>
-          ))}
+          {pets.length === 0 ? (
+            <div className="empty-state" data-cy="shelter-pets-empty">No pet profiles have been created for this organization yet.</div>
+          ) : (
+            pets.map((pet) => (
+              <article key={pet.id} data-cy="shelter-pet-item">
+                <strong>{pet.name}</strong>
+                <span>{pet.breed} - {pet.imageUrls.length} photo{pet.imageUrls.length === 1 ? "" : "s"}</span>
+                <div className="mini-actions">
+                  <a href={`#/pets/${pet.id}`}>View profile</a>
+                  <a href={`#/shelter/pets/${pet.id}/photos`} data-cy="manage-photos-link">Manage photos</a>
+                </div>
+              </article>
+            ))
+          )}
         </div>
       </aside>
       <section className="panel inquiry-panel">
@@ -667,9 +897,16 @@ function ShelterPage({ pets, inquiries, addPet, updateInquiryStatus }) {
           <p>{inquiries.length} total</p>
         </div>
         {inquiryStatusMessage ? (
-          <div className="success" data-cy="inquiry-status-message">{inquiryStatusMessage}</div>
+          <StatusNotice type={inquiryStatusType} data-cy="inquiry-status-message">{inquiryStatusMessage}</StatusNotice>
         ) : null}
-        {inquiries.length === 0 ? (
+        {inquiriesLoadState === "loading" ? (
+          <StatusNotice type="loading" data-cy="inquiries-loading">Loading submitted inquiries...</StatusNotice>
+        ) : inquiriesLoadState === "error" ? (
+          <StatusNotice type="error" data-cy="inquiries-error">
+            <p>{inquiriesError}</p>
+            <button type="button" className="button secondary" onClick={retryInquiries} data-cy="retry-inquiries">Retry</button>
+          </StatusNotice>
+        ) : inquiries.length === 0 ? (
           <div className="empty-state" data-cy="inquiries-empty">
             No adoption inquiries have been submitted yet.
           </div>
@@ -798,6 +1035,8 @@ function NotFound() {
 
 function MyApp() {
   const [route, setRoute] = useState(parseRoute);
+  const [sessionInfo] = useState(readSession);
+  const [preferences, setPreferences] = useState(readPreferences);
   const [pets, setPets] = useState([]);
   const [inquiries, setInquiries] = useState([]);
   const [favorites, setFavorites] = useState(() => readJson(favoritesKey, []));
@@ -806,6 +1045,12 @@ function MyApp() {
   const [username, setUsername] = useState(readUsername);
   const [message, setMessage] = useState("");
   const [apiStatus, setApiStatus] = useState("Loading pets from backend...");
+  const [petLoadState, setPetLoadState] = useState("loading");
+  const [petLoadError, setPetLoadError] = useState("");
+  const [petLoadAttempt, setPetLoadAttempt] = useState(0);
+  const [inquiriesLoadState, setInquiriesLoadState] = useState("idle");
+  const [inquiriesError, setInquiriesError] = useState("");
+  const [inquiriesLoadAttempt, setInquiriesLoadAttempt] = useState(0);
   const isAuthenticated = token !== INVALID_TOKEN;
   const isOrganization = role === "organization";
 
@@ -816,9 +1061,26 @@ function MyApp() {
   }, []);
 
   useEffect(() => {
+    writeJson(preferencesKey, preferences);
+  }, [preferences]);
+
+  useEffect(() => {
+    writeJson(browsingStateKey, {
+      hash: window.location.hash || "#/",
+      page: route.page,
+      id: route.id || "",
+      updatedAt: new Date().toISOString()
+    });
+  }, [route]);
+
+  useEffect(() => {
     let ignore = false;
 
     async function loadPets() {
+      setPetLoadState("loading");
+      setPetLoadError("");
+      setApiStatus("Loading pets from backend...");
+
       try {
         let backendPets = await apiRequest("/pets");
 
@@ -828,11 +1090,14 @@ function MyApp() {
 
         if (!ignore) {
           setPets(backendPets.map(normalizePet));
+          setPetLoadState("ready");
           setApiStatus(backendPets === seedPets ? "Showing starter pet data. Log in to create saved backend records." : "");
         }
       } catch {
         if (!ignore) {
           setPets([]);
+          setPetLoadState("error");
+          setPetLoadError("Pets could not be loaded. Start Express on port 8000 with MongoDB configured, then retry.");
           setApiStatus("Backend unavailable. Start Express on port 8000 with MongoDB configured.");
         }
       }
@@ -842,7 +1107,7 @@ function MyApp() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [petLoadAttempt]);
 
   function saveAuth(payload, fallbackUsername) {
     const nextRole = payload.role || "adopter";
@@ -931,18 +1196,26 @@ function MyApp() {
     async function loadInquiries() {
       if (!isOrganization) {
         setInquiries([]);
+        setInquiriesLoadState("idle");
+        setInquiriesError("");
         return;
       }
+
+      setInquiriesLoadState("loading");
+      setInquiriesError("");
 
       try {
         const backendInquiries = await apiRequest("/inquiries", {}, token);
 
         if (!ignore) {
           setInquiries(backendInquiries.map(normalizeInquiry));
+          setInquiriesLoadState("ready");
         }
       } catch {
         if (!ignore) {
           setInquiries([]);
+          setInquiriesLoadState("error");
+          setInquiriesError("Submitted inquiries could not be loaded. Check that the backend is running, then retry.");
         }
       }
     }
@@ -951,7 +1224,7 @@ function MyApp() {
     return () => {
       ignore = true;
     };
-  }, [isOrganization, token]);
+  }, [inquiriesLoadAttempt, isOrganization, token]);
 
   async function addPet(pet) {
     const createdPet = normalizePet(await apiRequest("/pets", {
@@ -992,15 +1265,21 @@ function MyApp() {
   }
 
   const pet = useMemo(() => pets.find((item) => item.id === route.id), [pets, route.id]);
+  const retryLoadPets = () => setPetLoadAttempt((current) => current + 1);
 
   let page;
   if (route.page === "login") page = <LoginPage mode="login" handleSubmit={loginUser} message={message} isAuthenticated={isAuthenticated} />;
   else if (route.page === "signup") page = <LoginPage mode="signup" handleSubmit={signupUser} message={message} isAuthenticated={isAuthenticated} />;
-  else if (route.page === "profile") page = pet ? <ProfilePage pet={pet} favorites={favorites} setFavorites={setFavorites} addInquiry={addInquiry} isAuthenticated={isAuthenticated} /> : <NotFound />;
-  else if (route.page === "favorites") page = <FavoritesPage pets={pets} favoriteIds={favorites} />;
-  else if (route.page === "shelter") page = isOrganization ? <ShelterPage pets={pets.filter((item) => item.ownerUsername === username)} inquiries={inquiries} addPet={addPet} updateInquiryStatus={updateInquiryStatus} /> : <LoginRequired title={isAuthenticated ? "Organization account required" : "Log in to use the shelter portal"} message={isAuthenticated ? "Only organization accounts can create and manage pet profiles." : undefined} />;
+  else if (route.page === "profile") {
+    if (pet) page = <ProfilePage pet={pet} favorites={favorites} setFavorites={setFavorites} addInquiry={addInquiry} isAuthenticated={isAuthenticated} />;
+    else if (petLoadState === "loading") page = <DataStatePage message="Loading this pet profile..." dataCy="profile-loading" />;
+    else if (petLoadState === "error") page = <DataStatePage type="error" message={petLoadError} onRetry={retryLoadPets} dataCy="profile-error" />;
+    else page = <NotFound />;
+  }
+  else if (route.page === "favorites") page = <FavoritesPage pets={pets} favoriteIds={favorites} loadState={petLoadState} loadError={petLoadError} retryLoadPets={retryLoadPets} />;
+  else if (route.page === "shelter") page = isOrganization ? <ShelterPage pets={pets.filter((item) => item.ownerUsername === username)} inquiries={inquiries} inquiriesLoadState={inquiriesLoadState} inquiriesError={inquiriesError} retryInquiries={() => setInquiriesLoadAttempt((current) => current + 1)} addPet={addPet} updateInquiryStatus={updateInquiryStatus} /> : <LoginRequired title={isAuthenticated ? "Organization account required" : "Log in to use the shelter portal"} message={isAuthenticated ? "Only organization accounts can create and manage pet profiles." : undefined} />;
   else if (route.page === "photos") page = isOrganization ? (pet ? <PhotoManagerPage pet={pet} updatePetPhotos={updatePetPhotos} /> : <NotFound />) : <LoginRequired title={isAuthenticated ? "Organization account required" : "Log in to manage photos"} message={isAuthenticated ? "Only organization accounts can manage pet photos." : undefined} />;
-  else page = <HomePage pets={pets} />;
+  else page = <HomePage pets={pets} preferences={preferences} setPreferences={setPreferences} loadState={petLoadState} loadError={petLoadError} retryLoadPets={retryLoadPets} sessionInfo={sessionInfo} />;
 
   return <AppChrome apiStatus={apiStatus} isAuthenticated={isAuthenticated} isOrganization={isOrganization} onLogout={logoutUser}>{page}</AppChrome>;
 }

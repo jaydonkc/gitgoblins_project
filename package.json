@@ -7,6 +7,7 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
+    "lint": "npx eslint . && npx prettier --check .",
     "test": "npm run test:e2e",
     "start": "npm --workspace packages/react-frontend run dev -- --host 127.0.0.1 --port 3100 --strictPort",
     "build": "npm --workspace packages/react-frontend run build",

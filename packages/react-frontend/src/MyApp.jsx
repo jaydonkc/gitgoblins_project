@@ -90,10 +90,12 @@ const emptyInquiry = {
 };
 
 const inquiryStatuses = ["new", "contacted", "approved", "rejected"];
+const inquiryFilterOptions = ["all", ...inquiryStatuses];
 const statusLabels = {
+  all: "All",
   new: "New",
   contacted: "Contacted",
-  approved: "Approved",
+  approved: "Accepted",
   rejected: "Rejected"
 };
 
@@ -455,7 +457,7 @@ function HomePage({
     <>
       <section className="hero">
         <div className="hero-copy">
-          <span className="eyebrow">Shelter pet discovery MVP</span>
+          <span className="eyebrow">Shelter pet discovery</span>
           <h1>Find adoptable pets faster.</h1>
           <p>
             Browse shelter pets, open detailed profiles, save favorites, and submit structured
@@ -620,7 +622,7 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated
         status: "new"
       });
       setForm(emptyInquiry);
-      setStatus(`Inquiry sent for ${pet.name}. Shelter notification logged for the MVP.`);
+      setStatus(`Inquiry sent for ${pet.name}. Shelter notification logged.`);
       setStatusType("success");
     } catch {
       setStatus("Inquiry could not be saved. Check that the backend and MongoDB are running.");
@@ -753,8 +755,10 @@ function ShelterPage({
   const [status, setStatus] = useState("");
   const [statusType, setStatusType] = useState("success");
   const [validationErrors, setValidationErrors] = useState([]);
+  const [showCreatePetForm, setShowCreatePetForm] = useState(false);
   const [inquiryStatusMessage, setInquiryStatusMessage] = useState("");
   const [inquiryStatusType, setInquiryStatusType] = useState("success");
+  const [inquiryStatusFilter, setInquiryStatusFilter] = useState("all");
   const [updatingInquiryId, setUpdatingInquiryId] = useState("");
   const inquiryCounts = useMemo(() => {
     return inquiryStatuses.reduce((counts, status) => {
@@ -762,6 +766,10 @@ function ShelterPage({
       return counts;
     }, {});
   }, [inquiries]);
+  const visibleInquiries = useMemo(() => {
+    if (inquiryStatusFilter === "all") return inquiries;
+    return inquiries.filter((inquiry) => (inquiry.status || "new") === inquiryStatusFilter);
+  }, [inquiries, inquiryStatusFilter]);
   const reviewQueueCount = inquiryCounts.new + inquiryCounts.contacted;
 
   function updateField(field, value) {
@@ -851,41 +859,59 @@ function ShelterPage({
     <section className="shelter-layout">
       <div className="panel">
         <span className="eyebrow">Shelter portal</span>
-        <h1>Create a pet profile</h1>
-        <p>Add the details adopters need to evaluate fit. Multiple photos are supported through image URLs for the MVP.</p>
+        <div className="create-pet-heading">
+          <div>
+            <h1>Pet profiles</h1>
+            <p>Add the details adopters need to evaluate fit. Multiple photos are supported through image URLs.</p>
+          </div>
+          <button
+            type="button"
+            className="button primary"
+            onClick={() => setShowCreatePetForm((current) => !current)}
+            aria-expanded={showCreatePetForm}
+            aria-controls="pet-create-form"
+            data-cy="toggle-create-pet"
+          >
+            {showCreatePetForm ? "Hide form" : "Add pet profile"}
+          </button>
+        </div>
         {status ? <StatusNotice type={statusType} data-cy="pet-create-success">{status}</StatusNotice> : null}
-        <ValidationList errors={validationErrors} id="pet-validation" />
-        <form className="form-grid" onSubmit={submitPet} data-cy="pet-create-form" noValidate>
-          <div className="two-col">
-            <Field label="Pet name"><input required value={form.name} onChange={(event) => updateField("name", event.target.value)} data-cy="pet-name" /></Field>
-            <Field label="Species"><select value={form.species} onChange={(event) => updateField("species", event.target.value)} data-cy="pet-species"><option>Dog</option><option>Cat</option><option>Other</option></select></Field>
-            <Field label="Breed"><input required value={form.breed} onChange={(event) => updateField("breed", event.target.value)} data-cy="pet-breed" /></Field>
-            <Field label="Age"><input required value={form.age} onChange={(event) => updateField("age", event.target.value)} data-cy="pet-age" /></Field>
-            <Field label="Size"><select value={form.size} onChange={(event) => updateField("size", event.target.value)} data-cy="pet-size"><option>Small</option><option>Medium</option><option>Large</option></select></Field>
-            <Field label="Energy level"><select value={form.energyLevel} onChange={(event) => updateField("energyLevel", event.target.value)} data-cy="pet-energy"><option>Low</option><option>Medium</option><option>High</option></select></Field>
-            <Field label="Location"><input required value={form.location} onChange={(event) => updateField("location", event.target.value)} data-cy="pet-location" /></Field>
-            <Field label="Adoption fee"><input type="number" min="0" value={form.adoptionFee} onChange={(event) => updateField("adoptionFee", event.target.value)} data-cy="pet-fee" /></Field>
-            <Field label="Shelter name"><input required value={form.shelterName} onChange={(event) => updateField("shelterName", event.target.value)} data-cy="pet-shelter-name" /></Field>
-            <Field label="Shelter email"><input required type="email" value={form.shelterEmail} onChange={(event) => updateField("shelterEmail", event.target.value)} data-cy="pet-shelter-email" /></Field>
-          </div>
-          <Field label="Description"><textarea required value={form.description} onChange={(event) => updateField("description", event.target.value)} data-cy="pet-description" /></Field>
-          <Field label="Compatibility notes" hint="Comma-separated values"><input value={form.compatibility} onChange={(event) => updateField("compatibility", event.target.value)} data-cy="pet-compatibility" /></Field>
-          <Field label="Health details"><input value={form.health} onChange={(event) => updateField("health", event.target.value)} data-cy="pet-health" /></Field>
-          <div className="photo-editor">
-            <div className="photo-editor-heading">
-              <h2>Pet photos</h2>
-              <button type="button" className="button secondary" onClick={addImageField} data-cy="add-photo-field">Add photo</button>
-            </div>
-            {form.imageUrls.map((url, index) => (
-              <div className="photo-row" key={index}>
-                <input aria-label={`Photo URL ${index + 1}`} value={url} onChange={(event) => updateImage(index, event.target.value)} data-cy="pet-photo-url" />
-                <button type="button" onClick={() => removeImageField(index)}>Remove</button>
+        {showCreatePetForm ? (
+          <>
+            <ValidationList errors={validationErrors} id="pet-validation" />
+            <form id="pet-create-form" className="form-grid" onSubmit={submitPet} data-cy="pet-create-form" noValidate>
+              <div className="two-col">
+                <Field label="Pet name"><input required value={form.name} onChange={(event) => updateField("name", event.target.value)} data-cy="pet-name" /></Field>
+                <Field label="Species"><select value={form.species} onChange={(event) => updateField("species", event.target.value)} data-cy="pet-species"><option>Dog</option><option>Cat</option><option>Other</option></select></Field>
+                <Field label="Breed"><input required value={form.breed} onChange={(event) => updateField("breed", event.target.value)} data-cy="pet-breed" /></Field>
+                <Field label="Age"><input required value={form.age} onChange={(event) => updateField("age", event.target.value)} data-cy="pet-age" /></Field>
+                <Field label="Size"><select value={form.size} onChange={(event) => updateField("size", event.target.value)} data-cy="pet-size"><option>Small</option><option>Medium</option><option>Large</option></select></Field>
+                <Field label="Energy level"><select value={form.energyLevel} onChange={(event) => updateField("energyLevel", event.target.value)} data-cy="pet-energy"><option>Low</option><option>Medium</option><option>High</option></select></Field>
+                <Field label="Location"><input required value={form.location} onChange={(event) => updateField("location", event.target.value)} data-cy="pet-location" /></Field>
+                <Field label="Adoption fee"><input type="number" min="0" value={form.adoptionFee} onChange={(event) => updateField("adoptionFee", event.target.value)} data-cy="pet-fee" /></Field>
+                <Field label="Shelter name"><input required value={form.shelterName} onChange={(event) => updateField("shelterName", event.target.value)} data-cy="pet-shelter-name" /></Field>
+                <Field label="Shelter email"><input required type="email" value={form.shelterEmail} onChange={(event) => updateField("shelterEmail", event.target.value)} data-cy="pet-shelter-email" /></Field>
               </div>
-            ))}
-          </div>
-          <button className="button primary" type="submit" data-cy="submit-pet">Create pet profile</button>
-        </form>
-      </div>
+              <Field label="Description"><textarea required value={form.description} onChange={(event) => updateField("description", event.target.value)} data-cy="pet-description" /></Field>
+              <Field label="Compatibility notes" hint="Comma-separated values"><input value={form.compatibility} onChange={(event) => updateField("compatibility", event.target.value)} data-cy="pet-compatibility" /></Field>
+              <Field label="Health details"><input value={form.health} onChange={(event) => updateField("health", event.target.value)} data-cy="pet-health" /></Field>
+              <div className="photo-editor">
+                <div className="photo-editor-heading">
+                  <h2>Pet photos</h2>
+                  <button type="button" className="button secondary" onClick={addImageField} data-cy="add-photo-field">Add photo</button>
+                </div>
+                {form.imageUrls.map((url, index) => (
+                  <div className="photo-row" key={index}>
+                    <input aria-label={`Photo URL ${index + 1}`} value={url} onChange={(event) => updateImage(index, event.target.value)} data-cy="pet-photo-url" />
+                    <button type="button" onClick={() => removeImageField(index)}>Remove</button>
+                  </div>
+                ))}
+              </div>
+              <button className="button primary" type="submit" data-cy="submit-pet">Create pet profile</button>
+            </form>
+          </>
+        ) : null}
+            </div>
       <aside className="panel">
         <h2>Current pet profiles</h2>
         <div className="profile-list" data-cy="shelter-pet-list">
@@ -925,6 +951,20 @@ function ShelterPage({
             </div>
           ))}
         </div>
+        <label className="inquiry-filter">
+          <span>Filter inquiries</span>
+          <select
+            value={inquiryStatusFilter}
+            onChange={(event) => setInquiryStatusFilter(event.target.value)}
+            data-cy="inquiry-status-filter"
+          >
+            {inquiryFilterOptions.map((statusOption) => (
+              <option key={statusOption} value={statusOption}>
+                {statusLabel(statusOption)}
+              </option>
+            ))}
+          </select>
+        </label>
         {inquiryStatusMessage ? (
           <StatusNotice type={inquiryStatusType} data-cy="inquiry-status-message">{inquiryStatusMessage}</StatusNotice>
         ) : null}
@@ -939,9 +979,13 @@ function ShelterPage({
           <div className="empty-state" data-cy="inquiries-empty">
             No adoption inquiries have been submitted yet. New adopter messages will appear here with contact details, housing notes, and review status.
           </div>
+        ) : visibleInquiries.length === 0 ? (
+          <div className="empty-state" data-cy="inquiries-filter-empty">
+            No {statusLabel(inquiryStatusFilter).toLowerCase()} inquiries match this filter.
+          </div>
         ) : (
           <div className="inquiry-list" data-cy="inquiry-list">
-            {inquiries.map((inquiry) => (
+            {visibleInquiries.map((inquiry) => (
               <article className="inquiry-item" key={inquiry.id} data-cy="inquiry-item">
                 <div className="inquiry-heading">
                   <div>
@@ -949,9 +993,6 @@ function ShelterPage({
                     <p>Submitted {formatSubmittedDate(inquiry.date)}</p>
                   </div>
                   <div className="inquiry-status-stack">
-                    <span className={`status-pill status-${inquiry.status || "new"}`} data-cy="inquiry-status-label">
-                      {statusLabel(inquiry.status || "new")}
-                    </span>
                     <label className="status-control">
                       <span>Status</span>
                       <select

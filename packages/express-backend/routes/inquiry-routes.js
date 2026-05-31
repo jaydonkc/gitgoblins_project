@@ -7,17 +7,17 @@ import { authenticateUser, requireOrganization } from "../auth.js";
 
 const {
   addInquiry,
-  getInquiries,
-  findInquiryById,
-  removeInquiry,
-  updateInquiryStatus
+  getInquiriesForPetOwner,
+  findInquiryByIdForPetOwner,
+  removeInquiryForPetOwner,
+  updateInquiryStatusForPetOwner
 } = inquiryService;
 
 const allowedStatuses = ["new", "contacted", "approved", "rejected"];
 
 router.get("/", authenticateUser, requireOrganization, (req, res) => {
 
-  getInquiries()
+  getInquiriesForPetOwner(req.user.username)
     .then((inquiries) => {
       res.send(inquiries);
     })
@@ -67,9 +67,13 @@ router.post("/", authenticateUser, (req, res) => {
 router.delete("/:id", authenticateUser, requireOrganization, (req, res) => {
   const id = req.params["id"];
 
-  removeInquiry(id)
-    .then(() => {
-      res.status(204).send();
+  removeInquiryForPetOwner(id, req.user.username)
+    .then((inquiry) => {
+      if (!inquiry) {
+        res.status(403).send("Forbidden: you can only manage inquiries for your own pet profiles.");
+      } else {
+        res.status(204).send();
+      }
     })
     .catch((error) => {
       console.log(error);
@@ -86,10 +90,10 @@ router.patch("/:id/status", authenticateUser, requireOrganization, (req, res) =>
     return;
   }
 
-  updateInquiryStatus(id, status)
+  updateInquiryStatusForPetOwner(id, status, req.user.username)
     .then((inquiry) => {
       if (!inquiry) {
-        res.status(404).send("Inquiry not found.");
+        res.status(403).send("Forbidden: you can only manage inquiries for your own pet profiles.");
       } else {
         res.send(inquiry);
       }
@@ -103,10 +107,10 @@ router.patch("/:id/status", authenticateUser, requireOrganization, (req, res) =>
 router.get("/:id", authenticateUser, requireOrganization, (req, res) => {
   const id = req.params["id"]; //or req.params.id
 
-  findInquiryById(id)
+  findInquiryByIdForPetOwner(id, req.user.username)
     .then((inquiry) => {
       if (!inquiry) {
-        res.status(404).send("Resource not found.");
+        res.status(403).send("Forbidden: you can only view inquiries for your own pet profiles.");
       } else {
         res.send(inquiry);
       }

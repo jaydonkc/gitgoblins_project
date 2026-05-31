@@ -1,189 +1,90 @@
-# Pet Adoption Match (Tinder-Style) MVP
+# Pet Adoption Match MVP Product Notes
 
 ## Core Idea
 
-A swipe-style pet discovery app where users browse adoptable
-pets from shelters, save favorites, and submit adoption
-interest.
-
-## Goal of the MVP
-
-Validate demand for a faster, engaging way to discover shelter
-pets before building complex integrations.
+Pet Adoption Match helps adopters discover shelter pets and helps organizations manage pet listings and adoption inquiries from one focused web app.
 
 ## Target Users
 
-- People looking to adopt pets
-- Shelters/rescues seeking visibility
+- Adopters who want to browse available pets, save favorites, and submit structured adoption interest.
+- Shelter or rescue staff who need to publish pet profiles and review adopter inquiries.
 
----
+## Implemented Tech Stack
 
-## Tech Stack (MVP)
+- Frontend: React 19, Vite, hash-based routing, browser localStorage for favorites and session state.
+- Backend: Express, JWT authentication, bcrypt password hashing.
+- Database: MongoDB through Mongoose models.
+- E2E testing: Cypress.
+- Deployment target: Vercel for the frontend and an Express-compatible backend host with MongoDB environment variables.
 
-### Frontend
+## Implemented User Flows
 
-- **Framework:** Next.js/Node.js (React)
+### Adopter Flow
 
-### Backend
+1. Browse available pets on the discovery feed.
+2. Filter by species, size, and energy level.
+3. Open a detailed pet profile with photos, shelter contact details, compatibility notes, health notes, and adoption fee.
+4. Save pets to a local favorites page.
+5. Sign up or log in.
+6. Submit an adoption inquiry with name, email, phone, housing details, and a message.
 
-- Express.js
+### Organization Flow
 
-### Database
+1. Sign up or log in as an organization account.
+2. Open the shelter portal.
+3. Expand the collapsed add-pet form when creating a new listing.
+4. Create pet profiles with details and image URLs.
+5. View only pet profiles created by the current organization username.
+6. Manage pet profile photos.
+7. Review only inquiries attached to pets owned by the current organization username.
+8. Filter inquiries by All, New, Contacted, Accepted, or Rejected.
+9. Update inquiry status from the dashboard.
 
-- MongoDB
-
-### Storage
-
-- Supabase Storage (pet images)
-- CDN-backed delivery for fast loading
-
-### APIs / Integrations (Phase 2+)
-
-- Petfinder API (for scaling listings)
-- Shelterluv API
-- Adopt-a-Pet API
-
-### Hosting / Deployment
-
-- **Frontend:** Vercel
-
----
-
-## User Flow
-
-### 1. Landing Page
-
-- Hero: “Find your match. Adopt, don’t shop.”
-- CTA: Start Browsing
-- Secondary CTA: For Shelters
-
-### 2. Onboarding / Preferences
-
-- Pet type (dog/cat)
-- Size, age, energy level
-- Good with kids/pets
-- Location radius
-
-### 3. Discovery Feed
-
-- Swipeable pet cards
-- Key info: name, breed, age, distance
-- Swipe right = interested
-- Swipe left = pass
-
-### 4. Pet Profile Page
-
-- Photos
-- Shelter info
-- Personality + health info
-- Adoption fee
-- CTA: I’m Interested
-
-### 5. Favorites Page
-
-- Saved pets
-- Compare options
-- Move to inquiry
-
-### 6. Adoption Inquiry
-
-- Name, email, phone
-- Housing info
-- Message
-- Sends to shelter
-
-### 7. Shelter Page
-
-- Benefits + onboarding
-- CTA: Join as Shelter
-
----
-
-## Core Features
-
-- Preferences
-- Swipe UI
-- Pet profiles
-- Favorites
-- Inquiry form
-
----
-
-## Data Model
-
-### Pet
-
-- id, name, species, breed, age
-- size, energy_level
-- description
-- compatibility flags
-- vaccinated, fixed
-- adoption_fee
-- shelter_id
-- location
-- images
-
-### Shelter
-
-- id, name, address
-- contact info
+## Implemented Data Model
 
 ### User
 
-- id, name, email
-- preferences
+- Stores `name`, `username`, `email`, `hashedPassword`, and `role`.
+- Roles are `adopter` and `organization`.
 
-### Swipe
+### Organization
 
-- user_id, pet_id, action
+- Stores standalone organization `name` and `email`.
+- Organization records are separate from organization user accounts.
+
+### Pet
+
+- Stores profile details including name, type/species, breed, age, size, energy level, location, description, compatibility, health, adoption fee, shelter name, shelter email, image URLs, availability, optional `linked_org`, and `ownerUsername`.
+- `ownerUsername` is set from the authenticated organization JWT when a pet is created.
 
 ### Inquiry
 
-- user_id, pet_id, message
+- References a required pet and optional user.
+- Stores contact details, housing details, message, date, and status.
+- Status values are `new`, `contacted`, `approved`, and `rejected`; the frontend labels `approved` as "Accepted".
 
----
+### Swipe
 
-## MVP Scope
+- References a user and pet and stores a boolean `swiped` value.
+- Swipe endpoints exist as authenticated backend routes, but swiping is not the primary frontend workflow in this final version.
 
-### Phase 1
+## Security Scope
 
-- Manual pet uploads
-- Swipe feed
-- Favorites
-- Inquiry form
+- Missing or invalid JWTs return `401` on protected routes.
+- Adopter accounts receive `403` on organization-only routes.
+- Pet creation, photo updates, availability updates, and deletion are organization-only.
+- Pet management and inquiry review are owner-scoped by matching pet `ownerUsername` to the authenticated organization username.
+- See [`SECURITY_BEHAVIOR.md`](./SECURITY_BEHAVIOR.md) for route-level details.
 
-### Phase 2
+## Known Limitations
 
-- Accounts
-- Matching improvements
-- Notifications
+- Favorites are local to the browser and are not synced to MongoDB.
+- Pet images use URLs rather than uploaded files.
+- Starter pet data is displayed by the frontend when the backend pet collection is empty, but it is not inserted into MongoDB automatically.
+- Swipe and user routes are authenticated but not owner-scoped.
+- Organization profile records are not automatically linked to organization user accounts.
+- External shelter integrations and notification delivery are outside the current scope.
 
-### Phase 3
+## Final Demo Pitch
 
-- Shelter integrations
-- AI recommendations
-
----
-
-## Success Metrics
-
-- Swipe → profile rate
-- Save rate
-- Inquiry rate
-- Adoption conversion
-
----
-
-## Risks
-
-- Adoption is serious, not just swiping
-- Supply side (shelters) is hard
-- Needs enough listings to be useful
-
----
-
-## Pitch
-
-A swipe-based pet adoption platform that helps people discover
-shelter animals faster and helps shelters generate more
-qualified leads.
+Pet Adoption Match gives adopters a simple way to discover pets and express interest, while giving shelters a lightweight portal for publishing pet profiles and managing inquiries tied to their own listings.

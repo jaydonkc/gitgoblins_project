@@ -28,8 +28,8 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.listen(port, () => {
+app.listen(process.env.PORT || port, () => {
   console.log(
-    `Example app listening at http://localhost:${port}`
+    `REST API is listening on port ${process.env.PORT || port}.`
   );
 });

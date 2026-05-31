@@ -7,12 +7,15 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "lint": "npx eslint . && npx prettier --check .",
-    "test": "npm run test:e2e",
-    "start": "npm --workspace packages/react-frontend run dev -- --host 127.0.0.1 --port 3100 --strictPort",
+    "test": "echo \"No unit tests configured; run npm run test:e2e locally with MongoDB for Cypress coverage.\"",
+    "start": "npm run start:frontend",
+    "start:frontend": "npm --workspace packages/react-frontend run dev -- --host 127.0.0.1 --port 3100 --strictPort",
+    "start:backend": "npm --workspace packages/express-backend run start",
     "build": "npm --workspace packages/react-frontend run build",
+    "lint": "npm run -w express-backend lint && npm run -w react-frontend lint",
+    "verify": "npm run lint && npm run build",
     "cypress:run": "cypress run --e2e",
-    "test:e2e": "start-server-and-test start http://127.0.0.1:3100 cypress:run",
+    "test:e2e": "TOKEN_SECRET=cypress-test-secret start-server-and-test \"npm run start:backend\" http://127.0.0.1:8000 \"start-server-and-test start:frontend http://127.0.0.1:3100 cypress:run\"",
     "format": "prettier --write './**/*.{js,jsx,ts,tsx,css,md,json}' --config ./.prettierrc"
   },
   "workspaces": [

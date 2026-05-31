@@ -90,6 +90,12 @@ const emptyInquiry = {
 };
 
 const inquiryStatuses = ["new", "contacted", "approved", "rejected"];
+const statusLabels = {
+  new: "New",
+  contacted: "Contacted",
+  approved: "Approved",
+  rejected: "Rejected"
+};
 
 function readJson(key, fallback) {
   try {
@@ -411,6 +417,10 @@ function formatSubmittedDate(date) {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(parsedDate);
+}
+
+function statusLabel(status) {
+  return statusLabels[status] || status;
 }
 
 function HomePage({
@@ -746,6 +756,13 @@ function ShelterPage({
   const [inquiryStatusMessage, setInquiryStatusMessage] = useState("");
   const [inquiryStatusType, setInquiryStatusType] = useState("success");
   const [updatingInquiryId, setUpdatingInquiryId] = useState("");
+  const inquiryCounts = useMemo(() => {
+    return inquiryStatuses.reduce((counts, status) => {
+      counts[status] = inquiries.filter((inquiry) => (inquiry.status || "new") === status).length;
+      return counts;
+    }, {});
+  }, [inquiries]);
+  const reviewQueueCount = inquiryCounts.new + inquiryCounts.contacted;
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -892,9 +909,21 @@ function ShelterPage({
         <div className="section-heading compact">
           <div>
             <span className="eyebrow">Adopter follow-up</span>
-            <h2>Submitted inquiries</h2>
+            <h2>Inquiry review dashboard</h2>
           </div>
-          <p>{inquiries.length} total</p>
+          <p>{reviewQueueCount} awaiting shelter review</p>
+        </div>
+        <div className="inquiry-summary" data-cy="inquiry-summary">
+          <div>
+            <span>Total submitted</span>
+            <strong>{inquiries.length}</strong>
+          </div>
+          {inquiryStatuses.map((statusOption) => (
+            <div key={statusOption}>
+              <span>{statusLabel(statusOption)}</span>
+              <strong>{inquiryCounts[statusOption]}</strong>
+            </div>
+          ))}
         </div>
         {inquiryStatusMessage ? (
           <StatusNotice type={inquiryStatusType} data-cy="inquiry-status-message">{inquiryStatusMessage}</StatusNotice>
@@ -908,7 +937,7 @@ function ShelterPage({
           </StatusNotice>
         ) : inquiries.length === 0 ? (
           <div className="empty-state" data-cy="inquiries-empty">
-            No adoption inquiries have been submitted yet.
+            No adoption inquiries have been submitted yet. New adopter messages will appear here with contact details, housing notes, and review status.
           </div>
         ) : (
           <div className="inquiry-list" data-cy="inquiry-list">
@@ -917,30 +946,37 @@ function ShelterPage({
                 <div className="inquiry-heading">
                   <div>
                     <h3>{inquiry.petName}</h3>
-                    <p>{formatSubmittedDate(inquiry.date)}</p>
+                    <p>Submitted {formatSubmittedDate(inquiry.date)}</p>
                   </div>
-                  <label className="status-control">
-                    <span>Status</span>
-                    <select
-                      value={inquiry.status || "new"}
-                      onChange={(event) => changeInquiryStatus(inquiry, event.target.value)}
-                      disabled={updatingInquiryId === inquiry.id}
-                      data-cy="inquiry-status-select"
-                    >
-                      {inquiryStatuses.map((statusOption) => (
-                        <option key={statusOption} value={statusOption}>
-                          {statusOption}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="inquiry-status-stack">
+                    <span className={`status-pill status-${inquiry.status || "new"}`} data-cy="inquiry-status-label">
+                      {statusLabel(inquiry.status || "new")}
+                    </span>
+                    <label className="status-control">
+                      <span>Status</span>
+                      <select
+                        value={inquiry.status || "new"}
+                        onChange={(event) => changeInquiryStatus(inquiry, event.target.value)}
+                        disabled={updatingInquiryId === inquiry.id}
+                        data-cy="inquiry-status-select"
+                      >
+                        {inquiryStatuses.map((statusOption) => (
+                          <option key={statusOption} value={statusOption}>
+                            {statusLabel(statusOption)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
                 </div>
                 <div className="inquiry-details">
                   <div>
-                    <span>Adopter</span>
+                    <span>Adopter contact</span>
                     <strong>{inquiry.name}</strong>
-                    <a href={`mailto:${inquiry.email}`}>{inquiry.email}</a>
-                    <a href={`tel:${inquiry.phone}`}>{inquiry.phone}</a>
+                    <div className="contact-actions">
+                      <a href={`mailto:${inquiry.email}`}>{inquiry.email}</a>
+                      <a href={`tel:${inquiry.phone}`}>{inquiry.phone}</a>
+                    </div>
                   </div>
                   <div>
                     <span>Housing</span>

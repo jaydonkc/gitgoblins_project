@@ -548,6 +548,34 @@ textarea {
   gap: 12px;
 }
 
+.inquiry-summary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.inquiry-summary div {
+  background: #f5f0e8;
+  border: 1px solid rgba(38, 52, 47, 0.1);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.inquiry-summary span {
+  color: rgba(38, 52, 47, 0.56);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.inquiry-summary strong {
+  font-size: 1.6rem;
+}
+
 .inquiry-item {
   border: 1px solid rgba(38, 52, 47, 0.12);
   border-radius: 8px;
@@ -575,7 +603,7 @@ textarea {
   grid-template-columns: 0.85fr 1fr 1.2fr;
 }
 
-.inquiry-details div {
+.inquiry-details > div {
   background: #f5f0e8;
   border-radius: 8px;
   display: grid;
@@ -584,7 +612,7 @@ textarea {
   padding: 12px;
 }
 
-.inquiry-details span {
+.inquiry-details > div > span {
   color: rgba(38, 52, 47, 0.56);
   font-size: 0.76rem;
   font-weight: 800;
@@ -595,6 +623,45 @@ textarea {
   color: #64724f;
   font-weight: 800;
   overflow-wrap: anywhere;
+}
+
+.contact-actions {
+  display: grid;
+  gap: 4px;
+}
+
+.inquiry-status-stack {
+  align-items: end;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.status-pill {
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 6px 10px;
+}
+
+.status-new {
+  background: rgba(49, 115, 143, 0.12);
+  color: #28576c;
+}
+
+.status-contacted {
+  background: rgba(151, 96, 70, 0.14);
+  color: #7b4b35;
+}
+
+.status-approved {
+  background: rgba(100, 114, 79, 0.16);
+  color: #4c5f37;
+}
+
+.status-rejected {
+  background: rgba(166, 75, 49, 0.14);
+  color: #8b3827;
 }
 
 .status-control {
@@ -639,6 +706,10 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .inquiry-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .preference-panel,
   .preference-controls {
     grid-template-columns: 1fr;
@@ -662,5 +733,15 @@ textarea {
   .facts,
   .two-col {
     grid-template-columns: 1fr;
+  }
+
+  .inquiry-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .inquiry-status-stack {
+    align-items: stretch;
+    justify-items: stretch;
   }
 }

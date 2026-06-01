@@ -10,7 +10,7 @@ jobs:
   deploy:
     if: >-
       ${{ github.event.workflow_run.conclusion == 'success' &&
-      vars.AZURE_BACKEND_APP_NAME != '' }}
+      vars.AZURE_BACKEND_CONFIGURED == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

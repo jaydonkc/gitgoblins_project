@@ -13,12 +13,15 @@ The CI job performs:
 
 `npm run lint` checks both workspaces with ESLint and runs a Prettier check against the workflow and package metadata files.
 
+The same workflow also contains backend and frontend deployment jobs that run after the CI job passes on push events. Each deployment job is gated by an Azure configuration variable so the normal CI checks can pass before cloud credentials are configured.
+
 ## Backend CD
 
-`.github/workflows/azure-backend-deploy.yml` deploys the Express workspace after the CI workflow passes on `main` or `TE6_branch`.
+`.github/workflows/azure-backend-deploy.yml` can deploy the Express workspace after the CI workflow passes on `main` or `TE6_branch`; `.github/workflows/ci-testing.yml` also has an equivalent backend deploy job for direct branch pushes.
 
 Required GitHub repository configuration:
 
+- Repository variable `AZURE_BACKEND_CONFIGURED`: set to `true` after the Azure Web App exists and the publish-profile secret has been saved.
 - Repository variable `AZURE_BACKEND_APP_NAME`: Azure Web App name for the Express API, currently `gitgoblins-api-jaydonkc`.
 - Repository secret `AZURE_BACKEND_PUBLISH_PROFILE`: publish profile downloaded from the Azure Web App.
 
@@ -32,7 +35,7 @@ The backend code listens on `process.env.PORT || 8000`, which is required for Az
 
 ## Frontend CD
 
-`.github/workflows/azure-static-web-apps.yml` deploys the Vite frontend after the CI workflow passes on `main` or `TE6_branch`.
+`.github/workflows/azure-static-web-apps.yml` can deploy the Vite frontend after the CI workflow passes on `main` or `TE6_branch`; `.github/workflows/ci-testing.yml` also has an equivalent frontend deploy job for direct branch pushes.
 
 Required GitHub repository configuration:
 

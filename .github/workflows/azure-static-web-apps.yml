@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: ["CI Testing"]
     types: [completed]
-    branches: [main]
+    branches: [main, TE6_branch]
 
 jobs:
   deploy:

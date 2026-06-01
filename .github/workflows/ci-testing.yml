@@ -2,7 +2,7 @@ name: CI Testing
 
 on:
   push:
-    branches: [main]
+    branches: [main, TE6_branch]
   pull_request:
     branches: [main]
 

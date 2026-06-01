@@ -40,6 +40,8 @@ The backend code listens on `process.env.PORT || 8000`, which is required for Az
 Required GitHub repository configuration:
 
 - Repository variable `AZURE_STATIC_WEB_APP_CONFIGURED`: set to `true` after the Static Web App exists.
+- Repository variable `AZURE_STATIC_WEB_APP_NAME`: Azure Static Web App name for the Vite frontend, currently `gitgoblins-frontend-jaydonkc`.
+- Repository variable `AZURE_STATIC_WEB_APP_URL`: deployed frontend URL, currently `https://polite-sea-04f9f5310.7.azurestaticapps.net`.
 - Repository variable `VITE_API_BASE_URL`: deployed backend URL, currently `https://gitgoblins-api-jaydonkc-bbbsbaeae4fhdfct.canadacentral-01.azurewebsites.net`.
 - Repository secret `AZURE_STATIC_WEB_APPS_API_TOKEN`: deployment token from the Azure Static Web App.
 

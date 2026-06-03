@@ -845,7 +845,7 @@ function ShelterPage({
 
     try {
       await updateInquiryStatus(inquiry.id, nextStatus);
-      setInquiryStatusMessage(`${inquiry.petName} inquiry marked ${nextStatus}.`);
+      setInquiryStatusMessage(`${inquiry.petName} inquiry marked ${statusLabel(nextStatus).toLowerCase()}.`);
       setInquiryStatusType("success");
     } catch {
       setInquiryStatusMessage("Inquiry status could not be saved. Check that the backend is running.");

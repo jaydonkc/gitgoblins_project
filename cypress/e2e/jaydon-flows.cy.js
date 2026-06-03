@@ -68,6 +68,7 @@ describe("Jaydon assigned pet adoption flows", () => {
     const adopterName = `Jaydon Test ${Date.now()}`;
     const adopterUsername = `cypress-adopter-${Date.now()}`;
     const shelterUsername = `cypress-reviewer-${Date.now()}`;
+    const otherShelterUsername = `cypress-other-reviewer-${Date.now()}`;
     const selectedPetName = `Jaydon Inquiry Pet ${Date.now()}`;
 
     signUp(shelterUsername, "organization");
@@ -118,6 +119,12 @@ describe("Jaydon assigned pet adoption flows", () => {
     cy.get("[data-cy=submit-inquiry]").click();
 
     cy.get("[data-cy=inquiry-success]").should("contain.text", "Inquiry sent");
+
+    cy.contains("button", "Log out").click();
+    signUp(otherShelterUsername, "organization");
+    cy.get("[data-cy=inquiries-empty]").should("contain.text", "No adoption inquiries");
+    cy.get("body").should("not.contain", adopterName);
+    cy.get("body").should("not.contain", selectedPetName);
 
     cy.contains("button", "Log out").click();
     logIn(shelterUsername, "organization");

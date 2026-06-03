@@ -50,17 +50,37 @@ Do not run backend-backed Cypress against a production or shared
 MongoDB database unless the team intentionally accepts test
 writes.
 
+Seed realistic demo data in the deployed database:
+
+```bash
+DEMO_PASSWORD="<temporary demo password>" npm run seed:demo
+```
+
+Set `DEMO_API_BASE_URL` when seeding a non-Azure backend.
+
 ## Demo Capture Path
 
-1. Start the backend with `MONGODB_URI` and `TOKEN_SECRET`.
-2. Start the frontend with `npm start`.
-3. Browse the discovery feed and show filters.
-4. Open a pet profile, use the gallery, and save the pet.
-5. Open Favorites and return to the saved profile.
-6. Sign up as an adopter and submit an inquiry.
-7. Sign up as an organization, create a pet profile, and manage
-   photos.
-8. Log back in as the shelter owner and review the inquiry
+Run the demo from the deployed frontend:
+`https://polite-sea-04f9f5310.7.azurestaticapps.net`.
+
+1. Browse the discovery feed and show filters. The seeded
+   profiles include Rosie, Mochi, Atlas, and Clover.
+2. Open Rosie's pet profile, use the gallery, and save the pet.
+3. Open Favorites and return to the saved profile.
+4. Log in as adopter `maria_gonzalez_demo`.
+5. Submit an inquiry using a real-looking example: `Jordan Lee`,
+   `jordan.lee@example.com`, `(805) 555-0188`,
+   `Condo in San Luis Obispo with landlord approval and a dog park nearby`,
+   and
+   `I can visit after work on Thursday and have vet references available.`
+6. Log in as organization `central_coast_rescue`.
+7. Create a pet profile with complete form data: `Sunny`, `Dog`,
+   `Cattle Dog Mix`, `3 years`, `Medium`, `High`,
+   `Morro Bay, CA`, fee `140`, shelter
+   `Central Coast Pet Alliance`, email
+   `adoptions@centralcoastpetalliance.org`, and two image URLs.
+8. Manage Sunny's photos from the shelter portal.
+9. Review the seeded and newly submitted inquiries in the
    dashboard, filters, and status updates.
 
 ## Deployment Configuration

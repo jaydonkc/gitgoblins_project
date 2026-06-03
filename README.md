@@ -164,8 +164,27 @@ Backend/API deployment target: Express app from
 `packages/express-backend`, with `MONGODB_URI` and
 `TOKEN_SECRET` configured in the deployment environment.
 
-Live demo URL: pending until the production deployment is
-connected.
+Live demo URL:
+`https://polite-sea-04f9f5310.7.azurestaticapps.net`.
+
+Live backend URL:
+`https://gitgoblins-api-jaydonkc-bbbsbaeae4fhdfct.canadacentral-01.azurewebsites.net`.
+
+Seed realistic demo records before presentation:
+
+```bash
+DEMO_PASSWORD="<temporary demo password>" npm run seed:demo
+```
+
+The seed script is idempotent and uses the deployed backend by
+default. Override with `DEMO_API_BASE_URL` for another backend.
+It creates or reuses these demo accounts:
+
+- `central_coast_rescue` - organization account for Central
+  Coast Pet Alliance
+- `green_mesa_rescue` - organization account for Green Mesa
+  Animal Rescue
+- `maria_gonzalez_demo` - adopter account for inquiry submission
 
 See
 [`docs/FINAL_DELIVERY_RUNBOOK.md`](./docs/FINAL_DELIVERY_RUNBOOK.md)

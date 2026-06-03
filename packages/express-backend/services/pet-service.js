@@ -7,7 +7,7 @@ function addPet(pet) {
 }
 
 function getPets() {
-  return petModel.find();
+  return petModel.find().sort({ _id: -1 });
 }
 
 function removePet(id) {
@@ -30,7 +30,11 @@ function updatePetAvailability(id, availability) {
   );
 }
 
-function updatePetAvailabilityForOwner(id, availability, ownerUsername) {
+function updatePetAvailabilityForOwner(
+  id,
+  availability,
+  ownerUsername
+) {
   return petModel.findOneAndUpdate(
     { _id: id, ownerUsername },
     { availability },
@@ -55,7 +59,9 @@ function updatePetPhotosForOwner(id, imageUrls, ownerUsername) {
 }
 
 function getAvailablePets() {
-  return petModel.find({ availability: { $ne: "adopted" } });
+  return petModel
+    .find({ availability: { $ne: "adopted" } })
+    .sort({ _id: -1 });
 }
 
 export default {

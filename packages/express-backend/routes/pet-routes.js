@@ -94,6 +94,16 @@ router.delete("/:id", authenticateUser, requireOrganization, (req, res) => {
     });
 });
 
+router.get("/discover/available", (req, res) => {
+  getAvailablePets()
+    .then((pets) => {
+      res.send(pets);
+    })
+    .catch((error) => {
+      res.status(404).send(error);
+    });
+});
+
 router.get("/:id", (req, res) => {
   const id = req.params["id"]; //or req.params.id
 
@@ -104,16 +114,6 @@ router.get("/:id", (req, res) => {
       } else {
         res.send(pet);
       }
-    })
-    .catch((error) => {
-      res.status(404).send(error);
-    });
-});
-
-router.get("/discover/available", (req, res) => {
-  getAvailablePets()
-    .then((pets) => {
-      res.send(pets);
     })
     .catch((error) => {
       res.status(404).send(error);

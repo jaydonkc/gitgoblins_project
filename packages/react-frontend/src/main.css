@@ -220,6 +220,21 @@ p {
   margin-bottom: 14px;
 }
 
+.create-pet-heading {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.create-pet-heading h1 {
+  margin-bottom: 10px;
+}
+
+.create-pet-heading .button {
+  flex: 0 0 auto;
+}
+
 .pet-grid {
   display: grid;
   gap: 20px;
@@ -548,6 +563,54 @@ textarea {
   gap: 12px;
 }
 
+.inquiry-summary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.inquiry-summary div {
+  background: #f5f0e8;
+  border: 1px solid rgba(38, 52, 47, 0.1);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.inquiry-summary span {
+  color: rgba(38, 52, 47, 0.56);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.inquiry-summary strong {
+  font-size: 1.6rem;
+}
+
+.inquiry-filter {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+.inquiry-filter span {
+  color: rgba(38, 52, 47, 0.56);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.inquiry-filter select {
+  max-width: 220px;
+  min-height: 38px;
+}
+
 .inquiry-item {
   border: 1px solid rgba(38, 52, 47, 0.12);
   border-radius: 8px;
@@ -575,7 +638,7 @@ textarea {
   grid-template-columns: 0.85fr 1fr 1.2fr;
 }
 
-.inquiry-details div {
+.inquiry-details > div {
   background: #f5f0e8;
   border-radius: 8px;
   display: grid;
@@ -584,7 +647,7 @@ textarea {
   padding: 12px;
 }
 
-.inquiry-details span {
+.inquiry-details > div > span {
   color: rgba(38, 52, 47, 0.56);
   font-size: 0.76rem;
   font-weight: 800;
@@ -595,6 +658,17 @@ textarea {
   color: #64724f;
   font-weight: 800;
   overflow-wrap: anywhere;
+}
+
+.contact-actions {
+  display: grid;
+  gap: 4px;
+}
+
+.inquiry-status-stack {
+  align-items: end;
+  display: grid;
+  justify-items: end;
 }
 
 .status-control {
@@ -639,6 +713,14 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .inquiry-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .inquiry-filter {
+    justify-content: flex-start;
+  }
+
   .preference-panel,
   .preference-controls {
     grid-template-columns: 1fr;
@@ -648,6 +730,7 @@ textarea {
 @media (max-width: 640px) {
   .topbar,
   .section-heading,
+  .create-pet-heading,
   .photo-row {
     align-items: stretch;
     flex-direction: column;
@@ -662,5 +745,24 @@ textarea {
   .facts,
   .two-col {
     grid-template-columns: 1fr;
+  }
+
+  .inquiry-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .inquiry-filter {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .inquiry-filter select {
+    max-width: none;
+  }
+
+  .inquiry-status-stack {
+    align-items: stretch;
+    justify-items: stretch;
   }
 }

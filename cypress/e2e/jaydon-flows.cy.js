@@ -9,6 +9,14 @@ function signUp(username, role) {
   cy.location("hash").should("eq", role === "organization" ? "#/shelter" : "#/");
 }
 
+function logIn(username, role) {
+  cy.visit("/#/login");
+  cy.get("#username").type(username);
+  cy.get("#password").type(testPassword);
+  cy.contains("button", "Log In").click();
+  cy.location("hash").should("eq", role === "organization" ? "#/shelter" : "#/");
+}
+
 describe("Jaydon assigned pet adoption flows", () => {
   beforeEach(() => {
     cy.clearLocalStorage();
@@ -60,14 +68,27 @@ describe("Jaydon assigned pet adoption flows", () => {
     const adopterName = `Jaydon Test ${Date.now()}`;
     const adopterUsername = `cypress-adopter-${Date.now()}`;
     const shelterUsername = `cypress-reviewer-${Date.now()}`;
-    let selectedPetName = "";
+    const otherShelterUsername = `cypress-other-reviewer-${Date.now()}`;
+    const selectedPetName = `Jaydon Inquiry Pet ${Date.now()}`;
+
+    signUp(shelterUsername, "organization");
+    cy.get("[data-cy=toggle-create-pet]").click();
+    cy.get("[data-cy=pet-name]").type(selectedPetName);
+    cy.get("[data-cy=pet-species]").select("Dog");
+    cy.get("[data-cy=pet-breed]").type("Retriever Mix");
+    cy.get("[data-cy=pet-age]").type("4 years");
+    cy.get("[data-cy=pet-location]").type("San Luis Obispo, CA");
+    cy.get("[data-cy=pet-shelter-name]").type("Jaydon Test Shelter");
+    cy.get("[data-cy=pet-shelter-email]").type("reviewer@example.com");
+    cy.get("[data-cy=pet-description]").type("A friendly test pet for inquiry review.");
+    cy.get("[data-cy=pet-photo-url]").eq(0).type("https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=1200&q=80");
+    cy.get("[data-cy=submit-pet]").click();
+    cy.get("[data-cy=pet-create-success]").should("contain.text", selectedPetName);
+    cy.contains("button", "Log out").click();
 
     signUp(adopterUsername, "adopter");
     cy.contains("Pet Adoption Match");
-    cy.get("[data-cy=pet-card]").first().find("h3").then(($heading) => {
-      selectedPetName = $heading.text();
-    });
-    cy.get("[data-cy=pet-card]").first().find("[data-cy=pet-card-link]").click();
+    cy.contains("[data-cy=pet-card]", selectedPetName).find("[data-cy=pet-card-link]").click();
 
     cy.then(() => {
       cy.get("[data-cy=pet-profile-name]").should("contain.text", selectedPetName);
@@ -99,7 +120,14 @@ describe("Jaydon assigned pet adoption flows", () => {
 
     cy.get("[data-cy=inquiry-success]").should("contain.text", "Inquiry sent");
 
-    signUp(shelterUsername, "organization");
+    cy.contains("button", "Log out").click();
+    signUp(otherShelterUsername, "organization");
+    cy.get("[data-cy=inquiries-empty]").should("contain.text", "No adoption inquiries");
+    cy.get("body").should("not.contain", adopterName);
+    cy.get("body").should("not.contain", selectedPetName);
+
+    cy.contains("button", "Log out").click();
+    logIn(shelterUsername, "organization");
     cy.get("[data-cy=inquiry-list]").should("contain.text", adopterName);
     cy.contains("[data-cy=inquiry-item]", adopterName).within(() => {
       cy.then(() => {
@@ -130,6 +158,7 @@ describe("Jaydon assigned pet adoption flows", () => {
     signUp(orgUsername, "organization");
 
     cy.get("[data-cy=shelter-pets-empty]").should("contain.text", "No pet profiles");
+    cy.get("[data-cy=toggle-create-pet]").click();
     cy.get("[data-cy=submit-pet]").click();
     cy.get("[data-cy=pet-validation]").should("contain.text", "Pet name is required.");
 

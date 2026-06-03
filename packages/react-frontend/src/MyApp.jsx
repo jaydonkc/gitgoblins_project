@@ -722,9 +722,11 @@ function HomePage({
         ) : (
           <div className="pet-grid">
             {visiblePets.map((pet) => (
-              <article
+              <a
                 className="pet-card"
+                href={`#/pets/${pet.id}`}
                 key={pet.id}
+                aria-label={`View ${pet.name}'s profile`}
                 data-cy="pet-card">
                 <Photo
                   src={pet.imageUrls[0]}
@@ -744,14 +746,13 @@ function HomePage({
                   </div>
                   <p>{pet.description}</p>
                   <p className="muted">{pet.location}</p>
-                  <a
+                  <span
                     className="button dark"
-                    href={`#/pets/${pet.id}`}
                     data-cy="pet-card-link">
                     View profile
-                  </a>
+                  </span>
                 </div>
-              </article>
+              </a>
             ))}
           </div>
         )}
@@ -1039,9 +1040,11 @@ function FavoritesPage({
       ) : (
         <div className="pet-grid" data-cy="favorites-list">
           {favorites.map((pet) => (
-            <article
+            <a
               className="pet-card"
+              href={`#/pets/${pet.id}`}
               key={pet.id}
+              aria-label={`View ${pet.name}'s profile`}
               data-cy="favorite-pet-card">
               <Photo
                 src={pet.imageUrls[0]}
@@ -1052,14 +1055,13 @@ function FavoritesPage({
                 <p>
                   {pet.breed} - {pet.age}
                 </p>
-                <a
+                <span
                   className="button dark"
-                  href={`#/pets/${pet.id}`}
                   data-cy="favorite-profile-link">
                   View profile
-                </a>
+                </span>
               </div>
-            </article>
+            </a>
           ))}
         </div>
       )}

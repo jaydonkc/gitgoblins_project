@@ -148,6 +148,13 @@ describe("final user story coverage", () => {
 
     cy.visit("/");
     cy.get("[data-cy=pet-card]").should("have.length", 2);
+    cy.contains("[data-cy=pet-card]", "Maple").click();
+    cy.location("hash").should("eq", "#/pets/pet-maple");
+    cy.get("[data-cy=pet-profile-name]").should(
+      "contain.text",
+      "Maple"
+    );
+    cy.visit("/");
 
     cy.get("[data-cy=preference-species]").select("Other");
     cy.get("[data-cy=feed-empty]").should(
@@ -191,7 +198,7 @@ describe("final user story coverage", () => {
       "contain.text",
       "Nova"
     );
-    cy.get("[data-cy=favorite-profile-link]").click();
+    cy.contains("[data-cy=favorite-pet-card]", "Nova").click();
     cy.get("[data-cy=pet-profile-name]").should(
       "contain.text",
       "Nova"

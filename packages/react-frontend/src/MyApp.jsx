@@ -1678,13 +1678,15 @@ function PhotoManagerPage({ pet, updatePetPhotos }) {
   }
 
   return (
-    <section className="shelter-layout">
-      <div className="panel">
-        <a className="back-link" href="#/shelter">
-          Back to shelter portal
-        </a>
-        <span className="eyebrow">Shelter photo manager</span>
-        <h1>Manage {pet.name} photos</h1>
+    <section className="shelter-layout photo-manager-layout">
+      <div className="panel photo-manager-panel">
+        <div className="photo-manager-heading">
+          <a className="back-link" href="#/shelter">
+            Back to shelter portal
+          </a>
+          <span className="eyebrow">Shelter photo manager</span>
+          <h1>Manage {pet.name} photos</h1>
+        </div>
         {status ? (
           <div
             className="success"
@@ -1745,10 +1747,10 @@ function PhotoManagerPage({ pet, updatePetPhotos }) {
           </div>
         </form>
       </div>
-      <aside className="panel">
+      <aside className="panel photo-gallery-panel">
         <h2>Current gallery</h2>
         <div
-          className="preview-grid"
+          className="preview-grid photo-manager-preview-list"
           data-cy="managed-photo-preview-list">
           {previewUrls.map((url, index) => (
             <Photo

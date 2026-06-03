@@ -16,7 +16,10 @@
     "verify": "npm run lint && npm run build",
     "format:check": "prettier --check .github/workflows/*.yml package.json packages/*/package.json .prettierrc",
     "cypress:run": "cypress run --e2e",
+    "cypress:run:stories": "cypress run --e2e --spec cypress/e2e/user-stories.cy.js",
+    "test:e2e:stories": "start-server-and-test start:frontend http://127.0.0.1:3100 cypress:run:stories",
     "test:e2e": "TOKEN_SECRET=cypress-test-secret start-server-and-test \"npm run start:backend\" http://127.0.0.1:8000 \"start-server-and-test start:frontend http://127.0.0.1:3100 cypress:run\"",
+    "test:e2e:all": "npm run test:e2e:stories && npm run test:e2e",
     "format": "prettier --write './**/*.{js,jsx,ts,tsx,css,md,json}' --config ./.prettierrc"
   },
   "workspaces": [

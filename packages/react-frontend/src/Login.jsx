@@ -8,7 +8,10 @@ function Login(props) {
   });
 
   return (
-    <form className="form-grid" onSubmit={submitForm}>
+    <form
+      className="form-grid"
+      onSubmit={submitForm}
+      data-cy="auth-form">
       <label className="field" htmlFor="username">
         <span>UserName</span>
         <input
@@ -38,8 +41,7 @@ function Login(props) {
             name="role"
             id="role"
             value={creds.role}
-            onChange={handleChange}
-          >
+            onChange={handleChange}>
             <option value="adopter">Adopter</option>
             <option value="organization">Organization</option>
           </select>

@@ -1,6 +1,10 @@
 # Pet Adoption Match
 
-Pet Adoption Match is a pet discovery and shelter management app. Adopters can browse available pets, save favorites, view detailed profiles, and submit adoption inquiries. Organization accounts can create pet profiles, manage pet photos, and review inquiries for pets they own.
+Pet Adoption Match is a pet discovery and shelter management
+app. Adopters can browse available pets, save favorites, view
+detailed profiles, and submit adoption inquiries. Organization
+accounts can create pet profiles, manage pet photos, and review
+inquiries for pets they own.
 
 Contributors:
 
@@ -12,38 +16,56 @@ Contributors:
 
 ### Adopter Experience
 
-- Browse adoptable pets from the backend, with starter pet data shown when the backend pet collection is empty.
+- Browse adoptable pets from the backend, with starter pet data
+  shown when the backend pet collection is empty.
 - Filter the discovery feed by species, size, and energy level.
-- Open detailed pet profiles with galleries, shelter details, health notes, compatibility notes, and adoption fees.
-- Save favorite pets in browser storage. Favorites persist locally, but they are not stored in MongoDB.
-- Submit authenticated adoption inquiries with contact, housing, and message details.
+- Open detailed pet profiles with galleries, shelter details,
+  health notes, compatibility notes, and adoption fees.
+- Save favorite pets in browser storage. Favorites persist
+  locally, but they are not stored in MongoDB.
+- Submit authenticated adoption inquiries with contact, housing,
+  and message details.
 
 ### Organization Experience
 
 - Sign up or log in as an organization account.
-- Open the shelter portal to view pets owned by the current organization username.
-- Expand the collapsed "Add pet profile" form only when creating a new pet.
-- Create pet profiles with details, compatibility notes, health details, and multiple image URLs.
+- Open the shelter portal to view pets owned by the current
+  organization username.
+- Expand the collapsed "Add pet profile" form only when creating
+  a new pet.
+- Create pet profiles with details, compatibility notes, health
+  details, and multiple image URLs.
 - Manage pet photos after creation.
-- Review adoption inquiries for pets owned by the current organization.
-- Filter the inquiry review dashboard by All, New, Contacted, Accepted, or Rejected.
-- Update inquiry status from the dashboard. The UI label "Accepted" maps to the backend status value `approved`.
+- Review adoption inquiries for pets owned by the current
+  organization.
+- Filter the inquiry review dashboard by All, New, Contacted,
+  Accepted, or Rejected.
+- Update inquiry status from the dashboard. The UI label
+  "Accepted" maps to the backend status value `approved`.
 
 ## Architecture
 
 This repo is an npm workspace with two main packages:
 
-- `packages/react-frontend`: React 19 + Vite single-page app using hash routes.
-- `packages/express-backend`: Express API backed by MongoDB through Mongoose.
+- `packages/react-frontend`: React 19 + Vite single-page app
+  using hash routes.
+- `packages/express-backend`: Express API backed by MongoDB
+  through Mongoose.
 
 The backend exposes:
 
 - `POST /signup` and `POST /login` for JWT-based authentication.
-- `/pets` for public pet reads and organization-only pet creation, photo updates, availability updates, and deletion.
-- `/inquiries` for authenticated inquiry creation and organization-only, owner-scoped inquiry review.
-- `/orgs`, `/users`, and `/swipes` routes for the supporting data models.
+- `/pets` for public pet reads and organization-only pet
+  creation, photo updates, availability updates, and deletion.
+- `/inquiries` for authenticated inquiry creation and
+  organization-only, owner-scoped inquiry review.
+- `/orgs`, `/users`, and `/swipes` routes for the supporting
+  data models.
 
-MongoDB models are implemented for users, organizations, pets, inquiries, and swipes. Security route behavior and model relationship notes are maintained in [`SECURITY_BEHAVIOR.md`](./SECURITY_BEHAVIOR.md).
+MongoDB models are implemented for users, organizations, pets,
+inquiries, and swipes. Security route behavior and model
+relationship notes are maintained in
+[`SECURITY_BEHAVIOR.md`](./SECURITY_BEHAVIOR.md).
 
 ## Setup
 
@@ -53,7 +75,8 @@ Install dependencies from the repo root:
 npm install
 ```
 
-Create a `.env` file at the repo root or in `packages/express-backend` with:
+Create a `.env` file at the repo root or in
+`packages/express-backend` with:
 
 ```bash
 MONGODB_URI=<your MongoDB connection string without the database name>
@@ -89,7 +112,8 @@ Start the frontend on port `3100`:
 npm start
 ```
 
-The frontend uses `http://localhost:8000` as the default API base URL. Override it with `VITE_API_BASE_URL` when needed.
+The frontend uses `http://localhost:8000` as the default API
+base URL. Override it with `VITE_API_BASE_URL` when needed.
 
 ## Testing And Verification
 
@@ -106,32 +130,68 @@ Run Cypress E2E tests locally with MongoDB configured:
 npm run test:e2e
 ```
 
+Run deterministic Cypress story coverage without MongoDB:
+
+```bash
+npm run test:e2e:stories
+```
+
+Run all Cypress coverage:
+
+```bash
+npm run test:e2e:all
+```
+
 The Cypress suite covers:
 
 - anonymous browsing preferences and local favorite persistence
+- browsing filters, empty filtered results, and filter reset
+- pet profile fallback text for missing optional values
 - pet profile navigation from discovery and favorites
+- auth role routing and organization-only screens
 - authenticated adoption inquiry submission
 - organization pet creation
 - organization inquiry review and status updates
 - multiple photo add, replace, remove, and gallery display
+- recoverable feed and inquiry loading failures
 
 ## Deployment Notes
 
-Frontend deployment target: Vercel static Vite deployment from `packages/react-frontend`.
+Frontend deployment target: Azure Static Web Apps or Vercel
+static Vite deployment from `packages/react-frontend`.
 
-Backend/API deployment target: Express app from `packages/express-backend`, with `MONGODB_URI` and `TOKEN_SECRET` configured in the deployment environment.
+Backend/API deployment target: Express app from
+`packages/express-backend`, with `MONGODB_URI` and
+`TOKEN_SECRET` configured in the deployment environment.
 
-Live demo URL: pending until the production deployment is connected.
+Live demo URL: pending until the production deployment is
+connected.
+
+See
+[`docs/FINAL_DELIVERY_RUNBOOK.md`](./docs/FINAL_DELIVERY_RUNBOOK.md)
+for the final demo path, deployment variables, and known
+blockers.
 
 ## Known Limitations
 
 - Favorites are stored in browser localStorage, not MongoDB.
-- Starter pet data appears only when backend pet records are empty; starter records are not automatically inserted into MongoDB.
-- Image handling uses image URLs rather than file upload/storage.
-- Swipe endpoints and user endpoints require authentication, but they are not yet scoped to the authenticated user's own records.
-- Organization profile records and organization user accounts are separate. Shelter ownership checks use the pet `ownerUsername` set from the authenticated organization account.
-- `GET /pets` is public and returns all pet records; the frontend filters adopted pets out of the discovery feed.
-- The dev frontend script uses port `3100` with `--strictPort`, so an existing process on that port must be stopped before starting the app.
+- Starter pet data appears only when backend pet records are
+  empty; starter records are not automatically inserted into
+  MongoDB.
+- Image handling uses image URLs rather than file
+  upload/storage.
+- Swipe endpoints and user endpoints require authentication, but
+  they are not yet scoped to the authenticated user's own
+  records.
+- Organization profile records and organization user accounts
+  are separate. Shelter ownership checks use the pet
+  `ownerUsername` set from the authenticated organization
+  account.
+- `GET /pets` is public and returns all pet records; the
+  frontend filters adopted pets out of the discovery feed.
+- The dev frontend script uses port `3100` with `--strictPort`,
+  so an existing process on that port must be stopped before
+  starting the app.
 
 ## Access Control Sequence Diagrams
 

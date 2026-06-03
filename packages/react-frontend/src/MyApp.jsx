@@ -9,7 +9,8 @@ const authTokenKey = "gitgoblins:authToken";
 const authRoleKey = "gitgoblins:authRole";
 const authUsernameKey = "gitgoblins:authUsername";
 const INVALID_TOKEN = "INVALID_TOKEN";
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const apiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 const defaultPreferences = {
   species: "all",
@@ -89,7 +90,12 @@ const emptyInquiry = {
   message: ""
 };
 
-const inquiryStatuses = ["new", "contacted", "approved", "rejected"];
+const inquiryStatuses = [
+  "new",
+  "contacted",
+  "approved",
+  "rejected"
+];
 const inquiryFilterOptions = ["all", ...inquiryStatuses];
 const statusLabels = {
   all: "All",
@@ -117,23 +123,37 @@ function writeJson(key, value) {
 }
 
 function createSessionId() {
-  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  if (window.crypto?.randomUUID)
+    return window.crypto.randomUUID();
   return `session-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function readSession() {
   try {
-    const existingSessionId = window.localStorage.getItem(sessionIdKey);
+    const existingSessionId =
+      window.localStorage.getItem(sessionIdKey);
 
     if (existingSessionId) {
-      return { id: existingSessionId, restored: true, persistent: true };
+      return {
+        id: existingSessionId,
+        restored: true,
+        persistent: true
+      };
     }
 
     const nextSessionId = createSessionId();
     window.localStorage.setItem(sessionIdKey, nextSessionId);
-    return { id: nextSessionId, restored: false, persistent: true };
+    return {
+      id: nextSessionId,
+      restored: false,
+      persistent: true
+    };
   } catch {
-    return { id: "temporary-session", restored: false, persistent: false };
+    return {
+      id: "temporary-session",
+      restored: false,
+      persistent: false
+    };
   }
 }
 
@@ -149,11 +169,15 @@ function isBlank(value) {
 }
 
 function isValidEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    String(value || "").trim()
+  );
 }
 
 function readToken() {
-  return window.localStorage.getItem(authTokenKey) || INVALID_TOKEN;
+  return (
+    window.localStorage.getItem(authTokenKey) || INVALID_TOKEN
+  );
 }
 
 function readRole() {
@@ -175,7 +199,11 @@ function addAuthHeader(token, otherHeaders = {}) {
   }
 }
 
-async function apiRequest(path, options = {}, token = readToken()) {
+async function apiRequest(
+  path,
+  options = {},
+  token = readToken()
+) {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...options,
     headers: addAuthHeader(token, {
@@ -196,54 +224,84 @@ function normalizeInquiry(inquiry) {
   return {
     ...inquiry,
     id: inquiry.id || inquiry._id,
-    petName: inquiry.pet?.name || inquiry.petName || "Unknown pet",
-    name: inquiry.user?.name || inquiry.name || "Unknown adopter",
-    email: inquiry.user?.email || inquiry.email || "No email provided",
+    petName:
+      inquiry.pet?.name || inquiry.petName || "Unknown pet",
+    name:
+      inquiry.user?.name || inquiry.name || "Unknown adopter",
+    email:
+      inquiry.user?.email ||
+      inquiry.email ||
+      "No email provided",
     phone: inquiry.phone || "No phone provided",
-    housing: inquiry.housing || "No housing information provided",
+    housing:
+      inquiry.housing || "No housing information provided",
     message: inquiry.message || "No message provided",
     date: inquiry.date || inquiry.createdAt || ""
   };
 }
 
 function normalizePet(pet) {
-  const imageUrls = Array.isArray(pet.imageUrls) && pet.imageUrls.length
-    ? pet.imageUrls
-    : [pet.image].filter(Boolean);
+  const imageUrls =
+    Array.isArray(pet.imageUrls) && pet.imageUrls.length
+      ? pet.imageUrls
+      : [pet.image].filter(Boolean);
 
   return {
     ...pet,
     id: pet.id || pet._id,
     species: pet.species || pet.type || "Pet",
+    breed: pet.breed || "Mixed breed",
+    age: pet.age || "Age pending",
+    location: pet.location || "Location pending",
+    description:
+      pet.description ||
+      "Profile details are still being completed by the shelter.",
     imageUrls: normalizeImages(imageUrls),
-    compatibility: Array.isArray(pet.compatibility) ? pet.compatibility : [],
+    compatibility: Array.isArray(pet.compatibility)
+      ? pet.compatibility
+      : [],
+    health: pet.health || "Health details pending",
     adoptionFee: Number(pet.adoptionFee || 0),
+    shelterName: pet.shelterName || "Shelter contact pending",
+    shelterEmail: pet.shelterEmail || "Contact unavailable",
     availability: pet.availability || "available"
   };
 }
 
 function normalizeImages(imageUrls) {
-  const cleaned = imageUrls.map((url) => url.trim()).filter(Boolean);
-  return cleaned.length
-    ? cleaned
-    : ["/favicon.svg"];
+  const cleaned = imageUrls
+    .map((url) => url.trim())
+    .filter(Boolean);
+  return cleaned.length ? cleaned : ["/favicon.svg"];
 }
 
 function parseRoute() {
   const hash = window.location.hash.replace(/^#/, "") || "/";
   const parts = hash.split("/").filter(Boolean);
-  if (parts[0] === "pets" && parts[1]) return { page: "profile", id: parts[1] };
+  if (parts[0] === "pets" && parts[1])
+    return { page: "profile", id: parts[1] };
   if (parts[0] === "favorites") return { page: "favorites" };
   if (parts[0] === "login") return { page: "login" };
   if (parts[0] === "signup") return { page: "signup" };
-  if (parts[0] === "shelter" && parts[1] === "pets" && parts[2] && parts[3] === "photos") {
+  if (
+    parts[0] === "shelter" &&
+    parts[1] === "pets" &&
+    parts[2] &&
+    parts[3] === "photos"
+  ) {
     return { page: "photos", id: parts[2] };
   }
   if (parts[0] === "shelter") return { page: "shelter" };
   return { page: "home" };
 }
 
-function AppChrome({ children, apiStatus, isAuthenticated, isOrganization, onLogout }) {
+function AppChrome({
+  children,
+  apiStatus,
+  isAuthenticated,
+  isOrganization,
+  onLogout
+}) {
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -256,18 +314,33 @@ function AppChrome({ children, apiStatus, isAuthenticated, isOrganization, onLog
           <a href="#/favorites">Favorites</a>
           {isAuthenticated ? (
             <>
-              {isOrganization ? <a className="nav-primary" href="#/shelter">Shelter portal</a> : null}
-              <button type="button" className="nav-button" onClick={onLogout}>Log out</button>
+              {isOrganization ? (
+                <a className="nav-primary" href="#/shelter">
+                  Shelter portal
+                </a>
+              ) : null}
+              <button
+                type="button"
+                className="nav-button"
+                onClick={onLogout}>
+                Log out
+              </button>
             </>
           ) : (
             <>
               <a href="#/login">Log in</a>
-              <a className="nav-primary" href="#/signup">Sign up</a>
+              <a className="nav-primary" href="#/signup">
+                Sign up
+              </a>
             </>
           )}
         </nav>
       </header>
-      {apiStatus ? <div className="api-banner">{apiStatus}</div> : null}
+      {apiStatus ? (
+        <div className="api-banner" data-cy="api-banner">
+          {apiStatus}
+        </div>
+      ) : null}
       <main>{children}</main>
     </div>
   );
@@ -289,7 +362,9 @@ function Photo({ src, alt, className = "", ...props }) {
 }
 
 function Gallery({ pet }) {
-  const photos = pet.imageUrls.length ? pet.imageUrls : ["/favicon.svg"];
+  const photos = pet.imageUrls.length
+    ? pet.imageUrls
+    : ["/favicon.svg"];
   const [selected, setSelected] = useState(0);
   const selectedPhoto = photos[selected] || photos[0];
 
@@ -311,8 +386,9 @@ function Gallery({ pet }) {
             onClick={() => setSelected(index)}
             aria-label={`Show ${pet.name} photo ${index + 1}`}
             data-cy="pet-photo-thumb"
-            className={selected === index ? "thumb active" : "thumb"}
-          >
+            className={
+              selected === index ? "thumb active" : "thumb"
+            }>
             <Photo src={photo} alt="" />
           </button>
         ))}
@@ -331,8 +407,17 @@ function Field({ label, children, hint }) {
   );
 }
 
-function StatusNotice({ type = "success", children, ...props }) {
-  const className = type === "error" ? "error-state" : type === "loading" ? "loading-state" : "success";
+function StatusNotice({
+  type = "success",
+  children,
+  ...props
+}) {
+  const className =
+    type === "error"
+      ? "error-state"
+      : type === "loading"
+        ? "loading-state"
+        : "success";
   return (
     <div className={className} {...props}>
       {children}
@@ -347,30 +432,47 @@ function ValidationList({ errors, id }) {
     <div className="error-state" data-cy={id}>
       <strong>Please fix the following:</strong>
       <ul>
-        {errors.map((error) => <li key={error}>{error}</li>)}
+        {errors.map((error) => (
+          <li key={error}>{error}</li>
+        ))}
       </ul>
     </div>
   );
 }
 
-function LoginPage({ mode, handleSubmit, message, isAuthenticated }) {
+function LoginPage({
+  mode,
+  handleSubmit,
+  message,
+  isAuthenticated
+}) {
   const isSignup = mode === "signup";
 
   return (
     <section className="auth-layout">
       <div className="panel auth-panel">
-        <span className="eyebrow">{isSignup ? "Create account" : "Welcome back"}</span>
+        <span className="eyebrow">
+          {isSignup ? "Create account" : "Welcome back"}
+        </span>
         <h1>{isSignup ? "Sign up" : "Log in"}</h1>
-        {isAuthenticated ? <div className="success">You are authenticated.</div> : null}
-        {message ? <div className="api-banner inline">{message}</div> : null}
+        {isAuthenticated ? (
+          <div className="success">You are authenticated.</div>
+        ) : null}
+        {message ? (
+          <div className="api-banner inline">{message}</div>
+        ) : null}
         <Login
           handleSubmit={handleSubmit}
           buttonLabel={isSignup ? "Sign Up" : "Log In"}
           showRoleChoice={isSignup}
         />
         <p className="muted">
-          {isSignup ? "Already have an account? " : "Need an account? "}
-          <a className="text-link" href={isSignup ? "#/login" : "#/signup"}>
+          {isSignup
+            ? "Already have an account? "
+            : "Need an account? "}
+          <a
+            className="text-link"
+            href={isSignup ? "#/login" : "#/signup"}>
             {isSignup ? "Log in" : "Sign up"}
           </a>
         </p>
@@ -379,7 +481,10 @@ function LoginPage({ mode, handleSubmit, message, isAuthenticated }) {
   );
 }
 
-function LoginRequired({ title = "Login required", message = "Sign in before creating pet profiles, managing photos, or sending adoption inquiries." }) {
+function LoginRequired({
+  title = "Login required",
+  message = "Sign in before creating pet profiles, managing photos, or sending adoption inquiries."
+}) {
   return (
     <section className="section">
       <div className="panel">
@@ -387,21 +492,33 @@ function LoginRequired({ title = "Login required", message = "Sign in before cre
         <h1>{title}</h1>
         <p>{message}</p>
         <div className="actions">
-          <a className="button primary" href="#/login">Log in</a>
-          <a className="button secondary" href="#/signup">Sign up</a>
+          <a className="button primary" href="#/login">
+            Log in
+          </a>
+          <a className="button secondary" href="#/signup">
+            Sign up
+          </a>
         </div>
       </div>
     </section>
   );
 }
 
-function DataStatePage({ type = "loading", message, onRetry, dataCy }) {
+function DataStatePage({
+  type = "loading",
+  message,
+  onRetry,
+  dataCy
+}) {
   return (
     <section className="section">
       <StatusNotice type={type} data-cy={dataCy}>
         <p>{message}</p>
         {onRetry ? (
-          <button type="button" className="button secondary" onClick={onRetry}>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={onRetry}>
             Retry
           </button>
         ) : null}
@@ -434,11 +551,17 @@ function HomePage({
   retryLoadPets,
   sessionInfo
 }) {
-  const availablePets = pets.filter((pet) => pet.availability !== "adopted");
-  const visiblePets = availablePets.filter((pet) =>
-    (preferences.species === "all" || pet.species === preferences.species) &&
-    (preferences.size === "all" || pet.size === preferences.size) &&
-    (preferences.energyLevel === "all" || pet.energyLevel === preferences.energyLevel)
+  const availablePets = pets.filter(
+    (pet) => pet.availability !== "adopted"
+  );
+  const visiblePets = availablePets.filter(
+    (pet) =>
+      (preferences.species === "all" ||
+        pet.species === preferences.species) &&
+      (preferences.size === "all" ||
+        pet.size === preferences.size) &&
+      (preferences.energyLevel === "all" ||
+        pet.energyLevel === preferences.energyLevel)
   );
   const featured = visiblePets[0];
   const sessionLabel = sessionInfo.persistent
@@ -446,7 +569,10 @@ function HomePage({
     : "Temporary session";
 
   function updatePreference(field, value) {
-    setPreferences((current) => ({ ...current, [field]: value }));
+    setPreferences((current) => ({
+      ...current,
+      [field]: value
+    }));
   }
 
   function clearPreferences() {
@@ -460,23 +586,36 @@ function HomePage({
           <span className="eyebrow">Shelter pet discovery</span>
           <h1>Find adoptable pets faster.</h1>
           <p>
-            Browse shelter pets, open detailed profiles, save favorites, and submit structured
-            adoption interest from one focused workflow.
+            Browse shelter pets, open detailed profiles, save
+            favorites, and submit structured adoption interest
+            from one focused workflow.
           </p>
           <div className="actions">
-            <a className="button primary" href="#pets">Browse pets</a>
-            <a className="button secondary" href="#/favorites">View favorites</a>
-            <a className="button secondary" href="#/shelter">Add a pet</a>
+            <a className="button primary" href="#pets">
+              Browse pets
+            </a>
+            <a className="button secondary" href="#/favorites">
+              View favorites
+            </a>
+            <a className="button secondary" href="#/shelter">
+              Add a pet
+            </a>
           </div>
         </div>
         <div className="featured-card">
           {featured ? (
             <>
-              <Photo src={featured.imageUrls[0]} alt={`${featured.name}, ${featured.breed}`} />
+              <Photo
+                src={featured.imageUrls[0]}
+                alt={`${featured.name}, ${featured.breed}`}
+              />
               <div>
                 <span>Featured match</span>
                 <h2>{featured.name}</h2>
-                <p>{featured.breed} - {featured.age} - {featured.location}</p>
+                <p>
+                  {featured.breed} - {featured.age} -{" "}
+                  {featured.location}
+                </p>
               </div>
             </>
           ) : (
@@ -491,7 +630,9 @@ function HomePage({
             <span className="eyebrow">Discovery feed</span>
             <h2>Available pets</h2>
           </div>
-          <p>{visiblePets.length} pets ready to meet adopters</p>
+          <p>
+            {visiblePets.length} pets ready to meet adopters
+          </p>
         </div>
 
         <div className="preference-panel">
@@ -501,7 +642,15 @@ function HomePage({
           </div>
           <div className="preference-controls">
             <Field label="Species">
-              <select value={preferences.species} onChange={(event) => updatePreference("species", event.target.value)} data-cy="preference-species">
+              <select
+                value={preferences.species}
+                onChange={(event) =>
+                  updatePreference(
+                    "species",
+                    event.target.value
+                  )
+                }
+                data-cy="preference-species">
                 <option value="all">All species</option>
                 <option value="Dog">Dog</option>
                 <option value="Cat">Cat</option>
@@ -509,7 +658,12 @@ function HomePage({
               </select>
             </Field>
             <Field label="Size">
-              <select value={preferences.size} onChange={(event) => updatePreference("size", event.target.value)} data-cy="preference-size">
+              <select
+                value={preferences.size}
+                onChange={(event) =>
+                  updatePreference("size", event.target.value)
+                }
+                data-cy="preference-size">
                 <option value="all">All sizes</option>
                 <option value="Small">Small</option>
                 <option value="Medium">Medium</option>
@@ -517,7 +671,15 @@ function HomePage({
               </select>
             </Field>
             <Field label="Energy">
-              <select value={preferences.energyLevel} onChange={(event) => updatePreference("energyLevel", event.target.value)} data-cy="preference-energy">
+              <select
+                value={preferences.energyLevel}
+                onChange={(event) =>
+                  updatePreference(
+                    "energyLevel",
+                    event.target.value
+                  )
+                }
+                data-cy="preference-energy">
                 <option value="all">All energy levels</option>
                 <option value="Low">Low</option>
                 <option value="Medium">Medium</option>
@@ -528,35 +690,64 @@ function HomePage({
         </div>
 
         {loadState === "loading" ? (
-          <StatusNotice type="loading" data-cy="feed-loading">Loading adoptable pets...</StatusNotice>
+          <StatusNotice type="loading" data-cy="feed-loading">
+            Loading adoptable pets...
+          </StatusNotice>
         ) : loadState === "error" ? (
           <StatusNotice type="error" data-cy="feed-error">
             <p>{loadError}</p>
-            <button type="button" className="button secondary" onClick={retryLoadPets} data-cy="retry-load-pets">Retry</button>
+            <button
+              type="button"
+              className="button secondary"
+              onClick={retryLoadPets}
+              data-cy="retry-load-pets">
+              Retry
+            </button>
           </StatusNotice>
         ) : visiblePets.length === 0 ? (
           <div className="empty-state" data-cy="feed-empty">
-            {availablePets.length === 0 ? "No adoptable pets are available yet." : "No pets match your saved preferences."}
+            {availablePets.length === 0
+              ? "No adoptable pets are available yet."
+              : "No pets match your saved preferences."}
             {availablePets.length > 0 ? (
-              <button type="button" className="button secondary" onClick={clearPreferences} data-cy="clear-preferences">Clear filters</button>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={clearPreferences}
+                data-cy="clear-preferences">
+                Clear filters
+              </button>
             ) : null}
           </div>
         ) : (
           <div className="pet-grid">
             {visiblePets.map((pet) => (
-              <article className="pet-card" key={pet.id} data-cy="pet-card">
-                <Photo src={pet.imageUrls[0]} alt={`${pet.name}, ${pet.breed}`} />
+              <article
+                className="pet-card"
+                key={pet.id}
+                data-cy="pet-card">
+                <Photo
+                  src={pet.imageUrls[0]}
+                  alt={`${pet.name}, ${pet.breed}`}
+                />
                 <div className="card-body">
                   <div className="card-title">
                     <div>
                       <h3>{pet.name}</h3>
-                      <p>{pet.breed} - {pet.age}</p>
+                      <p>
+                        {pet.breed} - {pet.age}
+                      </p>
                     </div>
-                    <span className="pill">{pet.availability}</span>
+                    <span className="pill">
+                      {pet.availability}
+                    </span>
                   </div>
                   <p>{pet.description}</p>
                   <p className="muted">{pet.location}</p>
-                  <a className="button dark" href={`#/pets/${pet.id}`} data-cy="pet-card-link">
+                  <a
+                    className="button dark"
+                    href={`#/pets/${pet.id}`}
+                    data-cy="pet-card-link">
                     View profile
                   </a>
                 </div>
@@ -569,7 +760,13 @@ function HomePage({
   );
 }
 
-function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated }) {
+function ProfilePage({
+  pet,
+  favorites,
+  setFavorites,
+  addInquiry,
+  isAuthenticated
+}) {
   const [form, setForm] = useState(emptyInquiry);
   const [status, setStatus] = useState("");
   const [statusType, setStatusType] = useState("success");
@@ -582,7 +779,9 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated
   }
 
   function toggleFavorite() {
-    const next = saved ? favorites.filter((id) => id !== pet.id) : [...favorites, pet.id];
+    const next = saved
+      ? favorites.filter((id) => id !== pet.id)
+      : [...favorites, pet.id];
     setFavorites(next);
     writeJson(favoritesKey, next);
   }
@@ -591,12 +790,18 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated
     event.preventDefault();
     const nextErrors = [];
 
-    if (isBlank(form.name)) nextErrors.push("Name is required.");
-    if (isBlank(form.email)) nextErrors.push("Email is required.");
-    else if (!isValidEmail(form.email)) nextErrors.push("Enter a valid email address.");
-    if (isBlank(form.phone)) nextErrors.push("Phone is required.");
-    if (isBlank(form.housing)) nextErrors.push("Housing information is required.");
-    if (isBlank(form.message)) nextErrors.push("Message is required.");
+    if (isBlank(form.name))
+      nextErrors.push("Name is required.");
+    if (isBlank(form.email))
+      nextErrors.push("Email is required.");
+    else if (!isValidEmail(form.email))
+      nextErrors.push("Enter a valid email address.");
+    if (isBlank(form.phone))
+      nextErrors.push("Phone is required.");
+    if (isBlank(form.housing))
+      nextErrors.push("Housing information is required.");
+    if (isBlank(form.message))
+      nextErrors.push("Message is required.");
 
     if (nextErrors.length) {
       setValidationErrors(nextErrors);
@@ -605,7 +810,9 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated
     }
 
     if (!isAuthenticated) {
-      setStatus("Please log in before submitting an adoption inquiry.");
+      setStatus(
+        "Please log in before submitting an adoption inquiry."
+      );
       setStatusType("error");
       return;
     }
@@ -622,17 +829,23 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated
         status: "new"
       });
       setForm(emptyInquiry);
-      setStatus(`Inquiry sent for ${pet.name}. Shelter notification logged.`);
+      setStatus(
+        `Inquiry sent for ${pet.name}. Shelter notification logged.`
+      );
       setStatusType("success");
     } catch {
-      setStatus("Inquiry could not be saved. Check that the backend and MongoDB are running.");
+      setStatus(
+        "Inquiry could not be saved. Check that the backend and MongoDB are running."
+      );
       setStatusType("error");
     }
   }
 
   return (
     <section className="profile-layout">
-      <a className="back-link" href="#/">Back to pets</a>
+      <a className="back-link" href="#/">
+        Back to pets
+      </a>
       <div className="profile-grid">
         <div className="profile-main">
           <Gallery pet={pet} />
@@ -659,40 +872,120 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated
                 </div>
               ))}
             </div>
-            <div className="tag-row">
-              {pet.compatibility.map((item) => <span key={item}>{item}</span>)}
+            <div
+              className="tag-row"
+              data-cy="pet-compatibility-list">
+              {pet.compatibility.length ? (
+                pet.compatibility.map((item) => (
+                  <span key={item}>{item}</span>
+                ))
+              ) : (
+                <span>Compatibility notes pending</span>
+              )}
             </div>
-            <p><strong>Health:</strong> {pet.health}</p>
-            <p><strong>Shelter:</strong> {pet.shelterName} - {pet.shelterEmail}</p>
+            <p data-cy="pet-health">
+              <strong>Health:</strong> {pet.health}
+            </p>
+            <p data-cy="pet-shelter">
+              <strong>Shelter:</strong> {pet.shelterName} -{" "}
+              {pet.shelterEmail}
+            </p>
           </div>
         </div>
 
         <aside className="panel sticky-panel">
-          <button type="button" className="button save" onClick={toggleFavorite} data-cy="save-pet">
+          <button
+            type="button"
+            className="button save"
+            onClick={toggleFavorite}
+            data-cy="save-pet">
             {saved ? "Saved pet" : "Save pet"}
           </button>
-          <a className="button dark" href="#inquiry-form" data-cy="start-inquiry">Start inquiry</a>
+          <a
+            className="button dark"
+            href="#inquiry-form"
+            data-cy="start-inquiry">
+            Start inquiry
+          </a>
           <h2>I am interested</h2>
-          <p>Send your contact and housing information so the shelter can evaluate fit.</p>
-          {status ? <StatusNotice type={statusType} data-cy="inquiry-success">{status}</StatusNotice> : null}
-          <ValidationList errors={validationErrors} id="inquiry-validation" />
-          <form id="inquiry-form" className="form-grid" onSubmit={submitInquiry} data-cy="inquiry-form" noValidate>
+          <p>
+            Send your contact and housing information so the
+            shelter can evaluate fit.
+          </p>
+          {status ? (
+            <StatusNotice
+              type={statusType}
+              data-cy="inquiry-success">
+              {status}
+            </StatusNotice>
+          ) : null}
+          <ValidationList
+            errors={validationErrors}
+            id="inquiry-validation"
+          />
+          <form
+            id="inquiry-form"
+            className="form-grid"
+            onSubmit={submitInquiry}
+            data-cy="inquiry-form"
+            noValidate>
             <Field label="Name">
-              <input required value={form.name} onChange={(event) => updateField("name", event.target.value)} data-cy="inquiry-name" />
+              <input
+                required
+                value={form.name}
+                onChange={(event) =>
+                  updateField("name", event.target.value)
+                }
+                data-cy="inquiry-name"
+              />
             </Field>
             <Field label="Email">
-              <input required type="email" value={form.email} onChange={(event) => updateField("email", event.target.value)} data-cy="inquiry-email" />
+              <input
+                required
+                type="email"
+                value={form.email}
+                onChange={(event) =>
+                  updateField("email", event.target.value)
+                }
+                data-cy="inquiry-email"
+              />
             </Field>
             <Field label="Phone">
-              <input required value={form.phone} onChange={(event) => updateField("phone", event.target.value)} data-cy="inquiry-phone" />
+              <input
+                required
+                value={form.phone}
+                onChange={(event) =>
+                  updateField("phone", event.target.value)
+                }
+                data-cy="inquiry-phone"
+              />
             </Field>
             <Field label="Housing information">
-              <textarea required value={form.housing} onChange={(event) => updateField("housing", event.target.value)} data-cy="inquiry-housing" />
+              <textarea
+                required
+                value={form.housing}
+                onChange={(event) =>
+                  updateField("housing", event.target.value)
+                }
+                data-cy="inquiry-housing"
+              />
             </Field>
             <Field label="Message">
-              <textarea required value={form.message} onChange={(event) => updateField("message", event.target.value)} data-cy="inquiry-message" />
+              <textarea
+                required
+                value={form.message}
+                onChange={(event) =>
+                  updateField("message", event.target.value)
+                }
+                data-cy="inquiry-message"
+              />
             </Field>
-            <button type="submit" className="button primary" data-cy="submit-inquiry">Submit inquiry</button>
+            <button
+              type="submit"
+              className="button primary"
+              data-cy="submit-inquiry">
+              Submit inquiry
+            </button>
           </form>
         </aside>
       </div>
@@ -700,8 +993,16 @@ function ProfilePage({ pet, favorites, setFavorites, addInquiry, isAuthenticated
   );
 }
 
-function FavoritesPage({ pets, favoriteIds, loadState, loadError, retryLoadPets }) {
-  const favorites = pets.filter((pet) => favoriteIds.includes(pet.id));
+function FavoritesPage({
+  pets,
+  favoriteIds,
+  loadState,
+  loadError,
+  retryLoadPets
+}) {
+  const favorites = pets.filter((pet) =>
+    favoriteIds.includes(pet.id)
+  );
   const hasSavedPets = favoriteIds.length > 0;
 
   return (
@@ -711,26 +1012,50 @@ function FavoritesPage({ pets, favoriteIds, loadState, loadError, retryLoadPets 
           <span className="eyebrow">Saved pets</span>
           <h1>Favorites</h1>
         </div>
-        <a className="button secondary" href="#/">Browse more pets</a>
+        <a className="button secondary" href="#/">
+          Browse more pets
+        </a>
       </div>
       {hasSavedPets && loadState === "loading" ? (
-        <StatusNotice type="loading" data-cy="favorites-loading">Loading saved pets...</StatusNotice>
+        <StatusNotice
+          type="loading"
+          data-cy="favorites-loading">
+          Loading saved pets...
+        </StatusNotice>
       ) : hasSavedPets && loadState === "error" ? (
         <StatusNotice type="error" data-cy="favorites-error">
           <p>{loadError}</p>
-          <button type="button" className="button secondary" onClick={retryLoadPets}>Retry</button>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={retryLoadPets}>
+            Retry
+          </button>
         </StatusNotice>
       ) : favorites.length === 0 ? (
-        <div className="panel" data-cy="favorites-empty">No saved pets yet.</div>
+        <div className="panel" data-cy="favorites-empty">
+          No saved pets yet.
+        </div>
       ) : (
         <div className="pet-grid" data-cy="favorites-list">
           {favorites.map((pet) => (
-            <article className="pet-card" key={pet.id} data-cy="favorite-pet-card">
-              <Photo src={pet.imageUrls[0]} alt={`${pet.name}, ${pet.breed}`} />
+            <article
+              className="pet-card"
+              key={pet.id}
+              data-cy="favorite-pet-card">
+              <Photo
+                src={pet.imageUrls[0]}
+                alt={`${pet.name}, ${pet.breed}`}
+              />
               <div className="card-body">
                 <h2>{pet.name}</h2>
-                <p>{pet.breed} - {pet.age}</p>
-                <a className="button dark" href={`#/pets/${pet.id}`} data-cy="favorite-profile-link">
+                <p>
+                  {pet.breed} - {pet.age}
+                </p>
+                <a
+                  className="button dark"
+                  href={`#/pets/${pet.id}`}
+                  data-cy="favorite-profile-link">
                   View profile
                 </a>
               </div>
@@ -755,22 +1080,33 @@ function ShelterPage({
   const [status, setStatus] = useState("");
   const [statusType, setStatusType] = useState("success");
   const [validationErrors, setValidationErrors] = useState([]);
-  const [showCreatePetForm, setShowCreatePetForm] = useState(false);
-  const [inquiryStatusMessage, setInquiryStatusMessage] = useState("");
-  const [inquiryStatusType, setInquiryStatusType] = useState("success");
-  const [inquiryStatusFilter, setInquiryStatusFilter] = useState("all");
-  const [updatingInquiryId, setUpdatingInquiryId] = useState("");
+  const [showCreatePetForm, setShowCreatePetForm] =
+    useState(false);
+  const [inquiryStatusMessage, setInquiryStatusMessage] =
+    useState("");
+  const [inquiryStatusType, setInquiryStatusType] =
+    useState("success");
+  const [inquiryStatusFilter, setInquiryStatusFilter] =
+    useState("all");
+  const [updatingInquiryId, setUpdatingInquiryId] =
+    useState("");
   const inquiryCounts = useMemo(() => {
     return inquiryStatuses.reduce((counts, status) => {
-      counts[status] = inquiries.filter((inquiry) => (inquiry.status || "new") === status).length;
+      counts[status] = inquiries.filter(
+        (inquiry) => (inquiry.status || "new") === status
+      ).length;
       return counts;
     }, {});
   }, [inquiries]);
   const visibleInquiries = useMemo(() => {
     if (inquiryStatusFilter === "all") return inquiries;
-    return inquiries.filter((inquiry) => (inquiry.status || "new") === inquiryStatusFilter);
+    return inquiries.filter(
+      (inquiry) =>
+        (inquiry.status || "new") === inquiryStatusFilter
+    );
   }, [inquiries, inquiryStatusFilter]);
-  const reviewQueueCount = inquiryCounts.new + inquiryCounts.contacted;
+  const reviewQueueCount =
+    inquiryCounts.new + inquiryCounts.contacted;
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -786,13 +1122,18 @@ function ShelterPage({
   }
 
   function addImageField() {
-    setForm((current) => ({ ...current, imageUrls: [...current.imageUrls, ""] }));
+    setForm((current) => ({
+      ...current,
+      imageUrls: [...current.imageUrls, ""]
+    }));
   }
 
   function removeImageField(index) {
     setForm((current) => ({
       ...current,
-      imageUrls: current.imageUrls.filter((_, itemIndex) => itemIndex !== index)
+      imageUrls: current.imageUrls.filter(
+        (_, itemIndex) => itemIndex !== index
+      )
     }));
   }
 
@@ -800,14 +1141,21 @@ function ShelterPage({
     event.preventDefault();
     const nextErrors = [];
 
-    if (isBlank(form.name)) nextErrors.push("Pet name is required.");
-    if (isBlank(form.breed)) nextErrors.push("Breed is required.");
+    if (isBlank(form.name))
+      nextErrors.push("Pet name is required.");
+    if (isBlank(form.breed))
+      nextErrors.push("Breed is required.");
     if (isBlank(form.age)) nextErrors.push("Age is required.");
-    if (isBlank(form.location)) nextErrors.push("Location is required.");
-    if (isBlank(form.shelterName)) nextErrors.push("Shelter name is required.");
-    if (isBlank(form.shelterEmail)) nextErrors.push("Shelter email is required.");
-    else if (!isValidEmail(form.shelterEmail)) nextErrors.push("Enter a valid shelter email address.");
-    if (isBlank(form.description)) nextErrors.push("Description is required.");
+    if (isBlank(form.location))
+      nextErrors.push("Location is required.");
+    if (isBlank(form.shelterName))
+      nextErrors.push("Shelter name is required.");
+    if (isBlank(form.shelterEmail))
+      nextErrors.push("Shelter email is required.");
+    else if (!isValidEmail(form.shelterEmail))
+      nextErrors.push("Enter a valid shelter email address.");
+    if (isBlank(form.description))
+      nextErrors.push("Description is required.");
 
     if (nextErrors.length) {
       setValidationErrors(nextErrors);
@@ -819,7 +1167,10 @@ function ShelterPage({
       ...form,
       type: form.species,
       adoptionFee: Number(form.adoptionFee || 0),
-      compatibility: form.compatibility.split(",").map((item) => item.trim()).filter(Boolean),
+      compatibility: form.compatibility
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
       imageUrls: normalizeImages(form.imageUrls),
       availability: "available"
     };
@@ -830,25 +1181,35 @@ function ShelterPage({
     try {
       const createdPet = await addPet(pet);
       setForm(emptyPet);
-      setStatus(`${createdPet.name} was created and is now visible in the discovery feed.`);
+      setStatus(
+        `${createdPet.name} was created and is now visible in the discovery feed.`
+      );
       setStatusType("success");
     } catch {
-      setStatus("Pet profile could not be saved. Check that the backend and MongoDB are running.");
+      setStatus(
+        "Pet profile could not be saved. Check that the backend and MongoDB are running."
+      );
       setStatusType("error");
     }
   }
 
   async function changeInquiryStatus(inquiry, nextStatus) {
-    setInquiryStatusMessage(`Updating ${inquiry.petName} inquiry...`);
+    setInquiryStatusMessage(
+      `Updating ${inquiry.petName} inquiry...`
+    );
     setInquiryStatusType("loading");
     setUpdatingInquiryId(inquiry.id);
 
     try {
       await updateInquiryStatus(inquiry.id, nextStatus);
-      setInquiryStatusMessage(`${inquiry.petName} inquiry marked ${statusLabel(nextStatus).toLowerCase()}.`);
+      setInquiryStatusMessage(
+        `${inquiry.petName} inquiry marked ${statusLabel(nextStatus).toLowerCase()}.`
+      );
       setInquiryStatusType("success");
     } catch {
-      setInquiryStatusMessage("Inquiry status could not be saved. Check that the backend is running.");
+      setInquiryStatusMessage(
+        "Inquiry status could not be saved. Check that the backend is running."
+      );
       setInquiryStatusType("error");
     } finally {
       setUpdatingInquiryId("");
@@ -862,69 +1223,271 @@ function ShelterPage({
         <div className="create-pet-heading">
           <div>
             <h1>Pet profiles</h1>
-            <p>Add the details adopters need to evaluate fit. Multiple photos are supported through image URLs.</p>
+            <p>
+              Add the details adopters need to evaluate fit.
+              Multiple photos are supported through image URLs.
+            </p>
           </div>
           <button
             type="button"
             className="button primary"
-            onClick={() => setShowCreatePetForm((current) => !current)}
+            onClick={() =>
+              setShowCreatePetForm((current) => !current)
+            }
             aria-expanded={showCreatePetForm}
             aria-controls="pet-create-form"
-            data-cy="toggle-create-pet"
-          >
-            {showCreatePetForm ? "Hide form" : "Add pet profile"}
+            data-cy="toggle-create-pet">
+            {showCreatePetForm
+              ? "Hide form"
+              : "Add pet profile"}
           </button>
         </div>
-        {status ? <StatusNotice type={statusType} data-cy="pet-create-success">{status}</StatusNotice> : null}
+        {status ? (
+          <StatusNotice
+            type={statusType}
+            data-cy="pet-create-success">
+            {status}
+          </StatusNotice>
+        ) : null}
         {showCreatePetForm ? (
           <>
-            <ValidationList errors={validationErrors} id="pet-validation" />
-            <form id="pet-create-form" className="form-grid" onSubmit={submitPet} data-cy="pet-create-form" noValidate>
+            <ValidationList
+              errors={validationErrors}
+              id="pet-validation"
+            />
+            <form
+              id="pet-create-form"
+              className="form-grid"
+              onSubmit={submitPet}
+              data-cy="pet-create-form"
+              noValidate>
               <div className="two-col">
-                <Field label="Pet name"><input required value={form.name} onChange={(event) => updateField("name", event.target.value)} data-cy="pet-name" /></Field>
-                <Field label="Species"><select value={form.species} onChange={(event) => updateField("species", event.target.value)} data-cy="pet-species"><option>Dog</option><option>Cat</option><option>Other</option></select></Field>
-                <Field label="Breed"><input required value={form.breed} onChange={(event) => updateField("breed", event.target.value)} data-cy="pet-breed" /></Field>
-                <Field label="Age"><input required value={form.age} onChange={(event) => updateField("age", event.target.value)} data-cy="pet-age" /></Field>
-                <Field label="Size"><select value={form.size} onChange={(event) => updateField("size", event.target.value)} data-cy="pet-size"><option>Small</option><option>Medium</option><option>Large</option></select></Field>
-                <Field label="Energy level"><select value={form.energyLevel} onChange={(event) => updateField("energyLevel", event.target.value)} data-cy="pet-energy"><option>Low</option><option>Medium</option><option>High</option></select></Field>
-                <Field label="Location"><input required value={form.location} onChange={(event) => updateField("location", event.target.value)} data-cy="pet-location" /></Field>
-                <Field label="Adoption fee"><input type="number" min="0" value={form.adoptionFee} onChange={(event) => updateField("adoptionFee", event.target.value)} data-cy="pet-fee" /></Field>
-                <Field label="Shelter name"><input required value={form.shelterName} onChange={(event) => updateField("shelterName", event.target.value)} data-cy="pet-shelter-name" /></Field>
-                <Field label="Shelter email"><input required type="email" value={form.shelterEmail} onChange={(event) => updateField("shelterEmail", event.target.value)} data-cy="pet-shelter-email" /></Field>
+                <Field label="Pet name">
+                  <input
+                    required
+                    value={form.name}
+                    onChange={(event) =>
+                      updateField("name", event.target.value)
+                    }
+                    data-cy="pet-name"
+                  />
+                </Field>
+                <Field label="Species">
+                  <select
+                    value={form.species}
+                    onChange={(event) =>
+                      updateField("species", event.target.value)
+                    }
+                    data-cy="pet-species">
+                    <option>Dog</option>
+                    <option>Cat</option>
+                    <option>Other</option>
+                  </select>
+                </Field>
+                <Field label="Breed">
+                  <input
+                    required
+                    value={form.breed}
+                    onChange={(event) =>
+                      updateField("breed", event.target.value)
+                    }
+                    data-cy="pet-breed"
+                  />
+                </Field>
+                <Field label="Age">
+                  <input
+                    required
+                    value={form.age}
+                    onChange={(event) =>
+                      updateField("age", event.target.value)
+                    }
+                    data-cy="pet-age"
+                  />
+                </Field>
+                <Field label="Size">
+                  <select
+                    value={form.size}
+                    onChange={(event) =>
+                      updateField("size", event.target.value)
+                    }
+                    data-cy="pet-size">
+                    <option>Small</option>
+                    <option>Medium</option>
+                    <option>Large</option>
+                  </select>
+                </Field>
+                <Field label="Energy level">
+                  <select
+                    value={form.energyLevel}
+                    onChange={(event) =>
+                      updateField(
+                        "energyLevel",
+                        event.target.value
+                      )
+                    }
+                    data-cy="pet-energy">
+                    <option>Low</option>
+                    <option>Medium</option>
+                    <option>High</option>
+                  </select>
+                </Field>
+                <Field label="Location">
+                  <input
+                    required
+                    value={form.location}
+                    onChange={(event) =>
+                      updateField(
+                        "location",
+                        event.target.value
+                      )
+                    }
+                    data-cy="pet-location"
+                  />
+                </Field>
+                <Field label="Adoption fee">
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.adoptionFee}
+                    onChange={(event) =>
+                      updateField(
+                        "adoptionFee",
+                        event.target.value
+                      )
+                    }
+                    data-cy="pet-fee"
+                  />
+                </Field>
+                <Field label="Shelter name">
+                  <input
+                    required
+                    value={form.shelterName}
+                    onChange={(event) =>
+                      updateField(
+                        "shelterName",
+                        event.target.value
+                      )
+                    }
+                    data-cy="pet-shelter-name"
+                  />
+                </Field>
+                <Field label="Shelter email">
+                  <input
+                    required
+                    type="email"
+                    value={form.shelterEmail}
+                    onChange={(event) =>
+                      updateField(
+                        "shelterEmail",
+                        event.target.value
+                      )
+                    }
+                    data-cy="pet-shelter-email"
+                  />
+                </Field>
               </div>
-              <Field label="Description"><textarea required value={form.description} onChange={(event) => updateField("description", event.target.value)} data-cy="pet-description" /></Field>
-              <Field label="Compatibility notes" hint="Comma-separated values"><input value={form.compatibility} onChange={(event) => updateField("compatibility", event.target.value)} data-cy="pet-compatibility" /></Field>
-              <Field label="Health details"><input value={form.health} onChange={(event) => updateField("health", event.target.value)} data-cy="pet-health" /></Field>
+              <Field label="Description">
+                <textarea
+                  required
+                  value={form.description}
+                  onChange={(event) =>
+                    updateField(
+                      "description",
+                      event.target.value
+                    )
+                  }
+                  data-cy="pet-description"
+                />
+              </Field>
+              <Field
+                label="Compatibility notes"
+                hint="Comma-separated values">
+                <input
+                  value={form.compatibility}
+                  onChange={(event) =>
+                    updateField(
+                      "compatibility",
+                      event.target.value
+                    )
+                  }
+                  data-cy="pet-compatibility"
+                />
+              </Field>
+              <Field label="Health details">
+                <input
+                  value={form.health}
+                  onChange={(event) =>
+                    updateField("health", event.target.value)
+                  }
+                  data-cy="pet-health"
+                />
+              </Field>
               <div className="photo-editor">
                 <div className="photo-editor-heading">
                   <h2>Pet photos</h2>
-                  <button type="button" className="button secondary" onClick={addImageField} data-cy="add-photo-field">Add photo</button>
+                  <button
+                    type="button"
+                    className="button secondary"
+                    onClick={addImageField}
+                    data-cy="add-photo-field">
+                    Add photo
+                  </button>
                 </div>
                 {form.imageUrls.map((url, index) => (
                   <div className="photo-row" key={index}>
-                    <input aria-label={`Photo URL ${index + 1}`} value={url} onChange={(event) => updateImage(index, event.target.value)} data-cy="pet-photo-url" />
-                    <button type="button" onClick={() => removeImageField(index)}>Remove</button>
+                    <input
+                      aria-label={`Photo URL ${index + 1}`}
+                      value={url}
+                      onChange={(event) =>
+                        updateImage(index, event.target.value)
+                      }
+                      data-cy="pet-photo-url"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImageField(index)}>
+                      Remove
+                    </button>
                   </div>
                 ))}
               </div>
-              <button className="button primary" type="submit" data-cy="submit-pet">Create pet profile</button>
+              <button
+                className="button primary"
+                type="submit"
+                data-cy="submit-pet">
+                Create pet profile
+              </button>
             </form>
           </>
         ) : null}
-            </div>
+      </div>
       <aside className="panel">
         <h2>Current pet profiles</h2>
-        <div className="profile-list" data-cy="shelter-pet-list">
+        <div
+          className="profile-list"
+          data-cy="shelter-pet-list">
           {pets.length === 0 ? (
-            <div className="empty-state" data-cy="shelter-pets-empty">No pet profiles have been created for this organization yet.</div>
+            <div
+              className="empty-state"
+              data-cy="shelter-pets-empty">
+              No pet profiles have been created for this
+              organization yet.
+            </div>
           ) : (
             pets.map((pet) => (
               <article key={pet.id} data-cy="shelter-pet-item">
                 <strong>{pet.name}</strong>
-                <span>{pet.breed} - {pet.imageUrls.length} photo{pet.imageUrls.length === 1 ? "" : "s"}</span>
+                <span>
+                  {pet.breed} - {pet.imageUrls.length} photo
+                  {pet.imageUrls.length === 1 ? "" : "s"}
+                </span>
                 <div className="mini-actions">
                   <a href={`#/pets/${pet.id}`}>View profile</a>
-                  <a href={`#/shelter/pets/${pet.id}/photos`} data-cy="manage-photos-link">Manage photos</a>
+                  <a
+                    href={`#/shelter/pets/${pet.id}/photos`}
+                    data-cy="manage-photos-link">
+                    Manage photos
+                  </a>
                 </div>
               </article>
             ))
@@ -939,7 +1502,9 @@ function ShelterPage({
           </div>
           <p>{reviewQueueCount} awaiting shelter review</p>
         </div>
-        <div className="inquiry-summary" data-cy="inquiry-summary">
+        <div
+          className="inquiry-summary"
+          data-cy="inquiry-summary">
           <div>
             <span>Total submitted</span>
             <strong>{inquiries.length}</strong>
@@ -955,9 +1520,10 @@ function ShelterPage({
           <span>Filter inquiries</span>
           <select
             value={inquiryStatusFilter}
-            onChange={(event) => setInquiryStatusFilter(event.target.value)}
-            data-cy="inquiry-status-filter"
-          >
+            onChange={(event) =>
+              setInquiryStatusFilter(event.target.value)
+            }
+            data-cy="inquiry-status-filter">
             {inquiryFilterOptions.map((statusOption) => (
               <option key={statusOption} value={statusOption}>
                 {statusLabel(statusOption)}
@@ -966,43 +1532,78 @@ function ShelterPage({
           </select>
         </label>
         {inquiryStatusMessage ? (
-          <StatusNotice type={inquiryStatusType} data-cy="inquiry-status-message">{inquiryStatusMessage}</StatusNotice>
+          <StatusNotice
+            type={inquiryStatusType}
+            data-cy="inquiry-status-message">
+            {inquiryStatusMessage}
+          </StatusNotice>
         ) : null}
         {inquiriesLoadState === "loading" ? (
-          <StatusNotice type="loading" data-cy="inquiries-loading">Loading submitted inquiries...</StatusNotice>
+          <StatusNotice
+            type="loading"
+            data-cy="inquiries-loading">
+            Loading submitted inquiries...
+          </StatusNotice>
         ) : inquiriesLoadState === "error" ? (
           <StatusNotice type="error" data-cy="inquiries-error">
             <p>{inquiriesError}</p>
-            <button type="button" className="button secondary" onClick={retryInquiries} data-cy="retry-inquiries">Retry</button>
+            <button
+              type="button"
+              className="button secondary"
+              onClick={retryInquiries}
+              data-cy="retry-inquiries">
+              Retry
+            </button>
           </StatusNotice>
         ) : inquiries.length === 0 ? (
-          <div className="empty-state" data-cy="inquiries-empty">
-            No adoption inquiries have been submitted yet. New adopter messages will appear here with contact details, housing notes, and review status.
+          <div
+            className="empty-state"
+            data-cy="inquiries-empty">
+            No adoption inquiries have been submitted yet. New
+            adopter messages will appear here with contact
+            details, housing notes, and review status.
           </div>
         ) : visibleInquiries.length === 0 ? (
-          <div className="empty-state" data-cy="inquiries-filter-empty">
-            No {statusLabel(inquiryStatusFilter).toLowerCase()} inquiries match this filter.
+          <div
+            className="empty-state"
+            data-cy="inquiries-filter-empty">
+            No {statusLabel(inquiryStatusFilter).toLowerCase()}{" "}
+            inquiries match this filter.
           </div>
         ) : (
           <div className="inquiry-list" data-cy="inquiry-list">
             {visibleInquiries.map((inquiry) => (
-              <article className="inquiry-item" key={inquiry.id} data-cy="inquiry-item">
+              <article
+                className="inquiry-item"
+                key={inquiry.id}
+                data-cy="inquiry-item">
                 <div className="inquiry-heading">
                   <div>
                     <h3>{inquiry.petName}</h3>
-                    <p>Submitted {formatSubmittedDate(inquiry.date)}</p>
+                    <p>
+                      Submitted{" "}
+                      {formatSubmittedDate(inquiry.date)}
+                    </p>
                   </div>
                   <div className="inquiry-status-stack">
                     <label className="status-control">
                       <span>Status</span>
                       <select
                         value={inquiry.status || "new"}
-                        onChange={(event) => changeInquiryStatus(inquiry, event.target.value)}
-                        disabled={updatingInquiryId === inquiry.id}
-                        data-cy="inquiry-status-select"
-                      >
+                        onChange={(event) =>
+                          changeInquiryStatus(
+                            inquiry,
+                            event.target.value
+                          )
+                        }
+                        disabled={
+                          updatingInquiryId === inquiry.id
+                        }
+                        data-cy="inquiry-status-select">
                         {inquiryStatuses.map((statusOption) => (
-                          <option key={statusOption} value={statusOption}>
+                          <option
+                            key={statusOption}
+                            value={statusOption}>
                             {statusLabel(statusOption)}
                           </option>
                         ))}
@@ -1015,8 +1616,12 @@ function ShelterPage({
                     <span>Adopter contact</span>
                     <strong>{inquiry.name}</strong>
                     <div className="contact-actions">
-                      <a href={`mailto:${inquiry.email}`}>{inquiry.email}</a>
-                      <a href={`tel:${inquiry.phone}`}>{inquiry.phone}</a>
+                      <a href={`mailto:${inquiry.email}`}>
+                        {inquiry.email}
+                      </a>
+                      <a href={`tel:${inquiry.phone}`}>
+                        {inquiry.phone}
+                      </a>
                     </div>
                   </div>
                   <div>
@@ -1038,9 +1643,15 @@ function ShelterPage({
 }
 
 function PhotoManagerPage({ pet, updatePetPhotos }) {
-  const [imageUrls, setImageUrls] = useState(pet.imageUrls.length ? pet.imageUrls : [""]);
+  const [imageUrls, setImageUrls] = useState(
+    pet.imageUrls.length ? pet.imageUrls : [""]
+  );
   const [status, setStatus] = useState("");
-  const previewUrls = imageUrls.map((url) => url.trim()).filter((url) => /^https?:\/\//.test(url) || url.startsWith("/"));
+  const previewUrls = imageUrls
+    .map((url) => url.trim())
+    .filter(
+      (url) => /^https?:\/\//.test(url) || url.startsWith("/")
+    );
 
   function updateImage(index, value) {
     setImageUrls((current) => {
@@ -1058,40 +1669,101 @@ function PhotoManagerPage({ pet, updatePetPhotos }) {
       await updatePetPhotos(pet.id, normalizeImages(imageUrls));
       setStatus(`Photos updated for ${pet.name}.`);
     } catch {
-      setStatus("Photos could not be saved. Check that the backend and MongoDB are running.");
+      setStatus(
+        "Photos could not be saved. Check that the backend and MongoDB are running."
+      );
     }
   }
 
   return (
     <section className="shelter-layout">
       <div className="panel">
-        <a className="back-link" href="#/shelter">Back to shelter portal</a>
+        <a className="back-link" href="#/shelter">
+          Back to shelter portal
+        </a>
         <span className="eyebrow">Shelter photo manager</span>
         <h1>Manage {pet.name} photos</h1>
-        {status ? <div className="success" data-cy="photo-manage-success">{status}</div> : null}
-        <form className="form-grid" onSubmit={savePhotos} data-cy="photo-manage-form">
+        {status ? (
+          <div
+            className="success"
+            data-cy="photo-manage-success">
+            {status}
+          </div>
+        ) : null}
+        <form
+          className="form-grid"
+          onSubmit={savePhotos}
+          data-cy="photo-manage-form">
           {imageUrls.map((url, index) => (
             <Field label={`Photo URL ${index + 1}`} key={index}>
               <div className="photo-row">
-                <input value={url} onChange={(event) => updateImage(index, event.target.value)} data-cy="managed-photo-url" />
-                <button type="button" onClick={() => setImageUrls((current) => current.filter((_, itemIndex) => itemIndex !== index).length ? current.filter((_, itemIndex) => itemIndex !== index) : [""])} data-cy="remove-managed-photo">Remove</button>
+                <input
+                  value={url}
+                  onChange={(event) =>
+                    updateImage(index, event.target.value)
+                  }
+                  data-cy="managed-photo-url"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setImageUrls((current) =>
+                      current.filter(
+                        (_, itemIndex) => itemIndex !== index
+                      ).length
+                        ? current.filter(
+                            (_, itemIndex) =>
+                              itemIndex !== index
+                          )
+                        : [""]
+                    )
+                  }
+                  data-cy="remove-managed-photo">
+                  Remove
+                </button>
               </div>
             </Field>
           ))}
           <div className="actions">
-            <button type="button" className="button secondary" onClick={() => setImageUrls((current) => [...current, ""])} data-cy="add-managed-photo">Add photo</button>
-            <button type="submit" className="button primary" data-cy="save-managed-photos">Save photos</button>
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() =>
+                setImageUrls((current) => [...current, ""])
+              }
+              data-cy="add-managed-photo">
+              Add photo
+            </button>
+            <button
+              type="submit"
+              className="button primary"
+              data-cy="save-managed-photos">
+              Save photos
+            </button>
           </div>
         </form>
       </div>
       <aside className="panel">
         <h2>Current gallery</h2>
-        <div className="preview-grid" data-cy="managed-photo-preview-list">
+        <div
+          className="preview-grid"
+          data-cy="managed-photo-preview-list">
           {previewUrls.map((url, index) => (
-            <Photo key={`${url}-${index}`} src={url} alt={`${pet.name} preview ${index + 1}`} className="preview-img" />
+            <Photo
+              key={`${url}-${index}`}
+              src={url}
+              alt={`${pet.name} preview ${index + 1}`}
+              className="preview-img"
+            />
           ))}
           {previewUrls.map((url, index) => (
-            <img key={`${url}-cy-${index}`} src={url} alt="" data-cy="managed-photo-preview" hidden />
+            <img
+              key={`${url}-cy-${index}`}
+              src={url}
+              alt=""
+              data-cy="managed-photo-preview"
+              hidden
+            />
           ))}
         </div>
       </aside>
@@ -1104,7 +1776,9 @@ function NotFound() {
     <section className="section">
       <div className="panel">
         <h1>Pet not found</h1>
-        <a className="button secondary" href="#/">Back to pets</a>
+        <a className="button secondary" href="#/">
+          Back to pets
+        </a>
       </div>
     </section>
   );
@@ -1113,28 +1787,36 @@ function NotFound() {
 function MyApp() {
   const [route, setRoute] = useState(parseRoute);
   const [sessionInfo] = useState(readSession);
-  const [preferences, setPreferences] = useState(readPreferences);
+  const [preferences, setPreferences] =
+    useState(readPreferences);
   const [pets, setPets] = useState([]);
   const [inquiries, setInquiries] = useState([]);
-  const [favorites, setFavorites] = useState(() => readJson(favoritesKey, []));
+  const [favorites, setFavorites] = useState(() =>
+    readJson(favoritesKey, [])
+  );
   const [token, setToken] = useState(readToken);
   const [role, setRole] = useState(readRole);
   const [username, setUsername] = useState(readUsername);
   const [message, setMessage] = useState("");
-  const [apiStatus, setApiStatus] = useState("Loading pets from backend...");
+  const [apiStatus, setApiStatus] = useState(
+    "Loading pets from backend..."
+  );
   const [petLoadState, setPetLoadState] = useState("loading");
   const [petLoadError, setPetLoadError] = useState("");
   const [petLoadAttempt, setPetLoadAttempt] = useState(0);
-  const [inquiriesLoadState, setInquiriesLoadState] = useState("idle");
+  const [inquiriesLoadState, setInquiriesLoadState] =
+    useState("idle");
   const [inquiriesError, setInquiriesError] = useState("");
-  const [inquiriesLoadAttempt, setInquiriesLoadAttempt] = useState(0);
+  const [inquiriesLoadAttempt, setInquiriesLoadAttempt] =
+    useState(0);
   const isAuthenticated = token !== INVALID_TOKEN;
   const isOrganization = role === "organization";
 
   useEffect(() => {
     const onHashChange = () => setRoute(parseRoute());
     window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
+    return () =>
+      window.removeEventListener("hashchange", onHashChange);
   }, []);
 
   useEffect(() => {
@@ -1168,14 +1850,22 @@ function MyApp() {
         if (!ignore) {
           setPets(backendPets.map(normalizePet));
           setPetLoadState("ready");
-          setApiStatus(backendPets === seedPets ? "Showing starter pet data. Log in to create saved backend records." : "");
+          setApiStatus(
+            backendPets === seedPets
+              ? "Showing starter pet data. Log in to create saved backend records."
+              : ""
+          );
         }
       } catch {
         if (!ignore) {
           setPets([]);
           setPetLoadState("error");
-          setPetLoadError("Pets could not be loaded. Start Express on port 8000 with MongoDB configured, then retry.");
-          setApiStatus("Backend unavailable. Start Express on port 8000 with MongoDB configured.");
+          setPetLoadError(
+            "Pets could not be loaded. Start Express on port 8000 with MongoDB configured, then retry."
+          );
+          setApiStatus(
+            "Backend unavailable. Start Express on port 8000 with MongoDB configured."
+          );
         }
       }
     }
@@ -1188,7 +1878,8 @@ function MyApp() {
 
   function saveAuth(payload, fallbackUsername) {
     const nextRole = payload.role || "adopter";
-    const nextUsername = payload.username || fallbackUsername || "";
+    const nextUsername =
+      payload.username || fallbackUsername || "";
 
     window.localStorage.setItem(authTokenKey, payload.token);
     window.localStorage.setItem(authRoleKey, nextRole);
@@ -1219,15 +1910,18 @@ function MyApp() {
     })
       .then((response) => {
         if (response.status === 200) {
-          response
-            .json()
-            .then((payload) => {
-              saveAuth(payload, creds.username);
-              window.location.hash = payload.role === "organization" ? "#/shelter" : "#/";
-            });
+          response.json().then((payload) => {
+            saveAuth(payload, creds.username);
+            window.location.hash =
+              payload.role === "organization"
+                ? "#/shelter"
+                : "#/";
+          });
           setMessage("Login successful; auth token saved");
         } else {
-          setMessage(`Login Error ${response.status}: Unauthorized`);
+          setMessage(
+            `Login Error ${response.status}: Unauthorized`
+          );
         }
       })
       .catch((error) => {
@@ -1247,16 +1941,21 @@ function MyApp() {
     })
       .then((response) => {
         if (response.status === 201) {
-          response
-            .json()
-            .then((payload) => {
-              saveAuth(payload, creds.username);
-              window.location.hash = payload.role === "organization" ? "#/shelter" : "#/";
-            });
-          setMessage(`Signup successful for user: ${creds.username}; auth token saved`);
+          response.json().then((payload) => {
+            saveAuth(payload, creds.username);
+            window.location.hash =
+              payload.role === "organization"
+                ? "#/shelter"
+                : "#/";
+          });
+          setMessage(
+            `Signup successful for user: ${creds.username}; auth token saved`
+          );
         } else {
           response.text().then((errorMessage) => {
-            setMessage(errorMessage || `Signup Error ${response.status}`);
+            setMessage(
+              errorMessage || `Signup Error ${response.status}`
+            );
           });
         }
       })
@@ -1282,7 +1981,11 @@ function MyApp() {
       setInquiriesError("");
 
       try {
-        const backendInquiries = await apiRequest("/inquiries", {}, token);
+        const backendInquiries = await apiRequest(
+          "/inquiries",
+          {},
+          token
+        );
 
         if (!ignore) {
           setInquiries(backendInquiries.map(normalizeInquiry));
@@ -1292,7 +1995,9 @@ function MyApp() {
         if (!ignore) {
           setInquiries([]);
           setInquiriesLoadState("error");
-          setInquiriesError("Submitted inquiries could not be loaded. Check that the backend is running, then retry.");
+          setInquiriesError(
+            "Submitted inquiries could not be loaded. Check that the backend is running, then retry."
+          );
         }
       }
     }
@@ -1304,61 +2009,210 @@ function MyApp() {
   }, [inquiriesLoadAttempt, isOrganization, token]);
 
   async function addPet(pet) {
-    const createdPet = normalizePet(await apiRequest("/pets", {
-      method: "POST",
-      body: JSON.stringify(pet)
-    }, token));
+    const createdPet = normalizePet(
+      await apiRequest(
+        "/pets",
+        {
+          method: "POST",
+          body: JSON.stringify(pet)
+        },
+        token
+      )
+    );
     setPets((current) => [createdPet, ...current]);
     return createdPet;
   }
 
   async function addInquiry(inquiry) {
-    const createdInquiry = normalizeInquiry(await apiRequest("/inquiries", {
-      method: "POST",
-      body: JSON.stringify(inquiry)
-    }, token));
+    const createdInquiry = normalizeInquiry(
+      await apiRequest(
+        "/inquiries",
+        {
+          method: "POST",
+          body: JSON.stringify(inquiry)
+        },
+        token
+      )
+    );
     setInquiries((current) => [createdInquiry, ...current]);
     return createdInquiry;
   }
 
   async function updateInquiryStatus(id, status) {
-    const updatedInquiry = normalizeInquiry(await apiRequest(`/inquiries/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status })
-    }, token));
+    const updatedInquiry = normalizeInquiry(
+      await apiRequest(
+        `/inquiries/${id}/status`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ status })
+        },
+        token
+      )
+    );
     setInquiries((current) =>
-      current.map((inquiry) => (inquiry.id === id ? updatedInquiry : inquiry))
+      current.map((inquiry) =>
+        inquiry.id === id ? updatedInquiry : inquiry
+      )
     );
     return updatedInquiry;
   }
 
   async function updatePetPhotos(id, imageUrls) {
-    const updatedPet = normalizePet(await apiRequest(`/pets/${id}/photos`, {
-      method: "PATCH",
-      body: JSON.stringify({ imageUrls })
-    }, token));
-    setPets((current) => current.map((pet) => (pet.id === id ? updatedPet : pet)));
+    const updatedPet = normalizePet(
+      await apiRequest(
+        `/pets/${id}/photos`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ imageUrls })
+        },
+        token
+      )
+    );
+    setPets((current) =>
+      current.map((pet) => (pet.id === id ? updatedPet : pet))
+    );
     return updatedPet;
   }
 
-  const pet = useMemo(() => pets.find((item) => item.id === route.id), [pets, route.id]);
-  const retryLoadPets = () => setPetLoadAttempt((current) => current + 1);
+  const pet = useMemo(
+    () => pets.find((item) => item.id === route.id),
+    [pets, route.id]
+  );
+  const retryLoadPets = () =>
+    setPetLoadAttempt((current) => current + 1);
 
   let page;
-  if (route.page === "login") page = <LoginPage mode="login" handleSubmit={loginUser} message={message} isAuthenticated={isAuthenticated} />;
-  else if (route.page === "signup") page = <LoginPage mode="signup" handleSubmit={signupUser} message={message} isAuthenticated={isAuthenticated} />;
+  if (route.page === "login")
+    page = (
+      <LoginPage
+        mode="login"
+        handleSubmit={loginUser}
+        message={message}
+        isAuthenticated={isAuthenticated}
+      />
+    );
+  else if (route.page === "signup")
+    page = (
+      <LoginPage
+        mode="signup"
+        handleSubmit={signupUser}
+        message={message}
+        isAuthenticated={isAuthenticated}
+      />
+    );
   else if (route.page === "profile") {
-    if (pet) page = <ProfilePage pet={pet} favorites={favorites} setFavorites={setFavorites} addInquiry={addInquiry} isAuthenticated={isAuthenticated} />;
-    else if (petLoadState === "loading") page = <DataStatePage message="Loading this pet profile..." dataCy="profile-loading" />;
-    else if (petLoadState === "error") page = <DataStatePage type="error" message={petLoadError} onRetry={retryLoadPets} dataCy="profile-error" />;
+    if (pet)
+      page = (
+        <ProfilePage
+          pet={pet}
+          favorites={favorites}
+          setFavorites={setFavorites}
+          addInquiry={addInquiry}
+          isAuthenticated={isAuthenticated}
+        />
+      );
+    else if (petLoadState === "loading")
+      page = (
+        <DataStatePage
+          message="Loading this pet profile..."
+          dataCy="profile-loading"
+        />
+      );
+    else if (petLoadState === "error")
+      page = (
+        <DataStatePage
+          type="error"
+          message={petLoadError}
+          onRetry={retryLoadPets}
+          dataCy="profile-error"
+        />
+      );
     else page = <NotFound />;
-  }
-  else if (route.page === "favorites") page = <FavoritesPage pets={pets} favoriteIds={favorites} loadState={petLoadState} loadError={petLoadError} retryLoadPets={retryLoadPets} />;
-  else if (route.page === "shelter") page = isOrganization ? <ShelterPage pets={pets.filter((item) => item.ownerUsername === username)} inquiries={inquiries} inquiriesLoadState={inquiriesLoadState} inquiriesError={inquiriesError} retryInquiries={() => setInquiriesLoadAttempt((current) => current + 1)} addPet={addPet} updateInquiryStatus={updateInquiryStatus} /> : <LoginRequired title={isAuthenticated ? "Organization account required" : "Log in to use the shelter portal"} message={isAuthenticated ? "Only organization accounts can create and manage pet profiles." : undefined} />;
-  else if (route.page === "photos") page = isOrganization ? (pet ? <PhotoManagerPage pet={pet} updatePetPhotos={updatePetPhotos} /> : <NotFound />) : <LoginRequired title={isAuthenticated ? "Organization account required" : "Log in to manage photos"} message={isAuthenticated ? "Only organization accounts can manage pet photos." : undefined} />;
-  else page = <HomePage pets={pets} preferences={preferences} setPreferences={setPreferences} loadState={petLoadState} loadError={petLoadError} retryLoadPets={retryLoadPets} sessionInfo={sessionInfo} />;
+  } else if (route.page === "favorites")
+    page = (
+      <FavoritesPage
+        pets={pets}
+        favoriteIds={favorites}
+        loadState={petLoadState}
+        loadError={petLoadError}
+        retryLoadPets={retryLoadPets}
+      />
+    );
+  else if (route.page === "shelter")
+    page = isOrganization ? (
+      <ShelterPage
+        pets={pets.filter(
+          (item) => item.ownerUsername === username
+        )}
+        inquiries={inquiries}
+        inquiriesLoadState={inquiriesLoadState}
+        inquiriesError={inquiriesError}
+        retryInquiries={() =>
+          setInquiriesLoadAttempt((current) => current + 1)
+        }
+        addPet={addPet}
+        updateInquiryStatus={updateInquiryStatus}
+      />
+    ) : (
+      <LoginRequired
+        title={
+          isAuthenticated
+            ? "Organization account required"
+            : "Log in to use the shelter portal"
+        }
+        message={
+          isAuthenticated
+            ? "Only organization accounts can create and manage pet profiles."
+            : undefined
+        }
+      />
+    );
+  else if (route.page === "photos")
+    page = isOrganization ? (
+      pet ? (
+        <PhotoManagerPage
+          pet={pet}
+          updatePetPhotos={updatePetPhotos}
+        />
+      ) : (
+        <NotFound />
+      )
+    ) : (
+      <LoginRequired
+        title={
+          isAuthenticated
+            ? "Organization account required"
+            : "Log in to manage photos"
+        }
+        message={
+          isAuthenticated
+            ? "Only organization accounts can manage pet photos."
+            : undefined
+        }
+      />
+    );
+  else
+    page = (
+      <HomePage
+        pets={pets}
+        preferences={preferences}
+        setPreferences={setPreferences}
+        loadState={petLoadState}
+        loadError={petLoadError}
+        retryLoadPets={retryLoadPets}
+        sessionInfo={sessionInfo}
+      />
+    );
 
-  return <AppChrome apiStatus={apiStatus} isAuthenticated={isAuthenticated} isOrganization={isOrganization} onLogout={logoutUser}>{page}</AppChrome>;
+  return (
+    <AppChrome
+      apiStatus={apiStatus}
+      isAuthenticated={isAuthenticated}
+      isOrganization={isOrganization}
+      onLogout={logoutUser}>
+      {page}
+    </AppChrome>
+  );
 }
 
 export default MyApp;

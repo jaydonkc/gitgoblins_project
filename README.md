@@ -58,6 +58,12 @@ Contributors:
 - Update inquiry status from the dashboard. The UI label
   "Accepted" maps to the backend status value `approved`.
 
+## UML Class Diagram
+
+The UML class diagram documents the main data model and relationships for Pet Adoption Match, including users, organizations, pets, inquiries, swipes, favorites, preferences, photos, and sessions.
+
+![UML Class Diagram](./docs/uml-class-diagram.png)
+
 ## Architecture
 
 This repo is an npm workspace with two main packages:

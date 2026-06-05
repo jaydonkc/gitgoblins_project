@@ -12,6 +12,21 @@ Contributors:
 - Jaydon Chen - Scrum Master
 - Carlos Lopez - Lead Developer
 
+## Final Submission Links
+
+- GitHub repository: <https://github.com/jaydonkc/gitgoblins_project>
+- GitHub Project board:
+  <https://github.com/users/jaydonkc/projects/1/views/2>
+- Demo video: <https://youtu.be/HEyqqLtsCYw>
+- Running deployed app:
+  <https://polite-sea-04f9f5310.7.azurestaticapps.net>
+- UI prototype/storyboard:
+  [PawPrint Figma prototype](https://www.figma.com/proto/3FXsFJZVXv26KCet3axnEQ/PawPrint?node-id=1-80&starting-point-node-id=1%3A80&t=o9IdVU9LA8iqE7MN-1),
+  last updated June 5, 2026. See
+  [`docs/UI_PROTOTYPE.md`](./docs/UI_PROTOTYPE.md).
+- Final submission checklist:
+  [`docs/FINAL_SUBMISSION.md`](./docs/FINAL_SUBMISSION.md).
+
 ## Current Product Behavior
 
 ### Adopter Experience
@@ -114,6 +129,18 @@ npm start
 
 The frontend uses `http://localhost:8000` as the default API
 base URL. Override it with `VITE_API_BASE_URL` when needed.
+
+## Login Instructions
+
+The app supports self-service account creation.
+
+1. Open the deployed or local app.
+2. Choose `Sign up`.
+3. Create either an `adopter` or `organization` account.
+4. Organization accounts can access the shelter portal at
+   `#/shelter`.
+5. Adopter accounts can browse pets, save favorites, and submit
+   inquiries.
 
 ## Testing And Verification
 
